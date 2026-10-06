@@ -116,7 +116,7 @@
         <div class="row"><label for="orientationSel">カメラ向き</label><select id="orientationSel"><option value="auto" selected>自動</option><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></div>
         <div class="row"><label>左右反転</label><input id="mirror" type="checkbox"></div>
         <div class="meter"><span id="meter"></span></div>
-        <p class="note">カメラは時間制限なく連続使用できます。遅延・比較では直近10分だけをローリング保持し、それより古い映像は自動で破棄します。</p><p class="note">カメラ向きは「自動」で2in1・タブレットの画面回転に追従します。合わない場合は0° / 90° / 180° / 270°で手動補正できます。表示・静止画・録画に同じ向きを反映します。</p>
+        <p class="note">カメラは時間制限なく連続使用できます。遅延・比較では直近10分だけをローリング保持し、それより古い映像は自動で破棄します。</p><p class="note">カメラ向きの「自動」は映像と表示枠の縦横比を見て必要なときだけ90°回転します。合わない場合は0° / 90° / 180° / 270°で手動補正できます。表示・遅延・比較・静止画・録画に同じ向きを反映します。</p>
       </section>
       <section class="menuPanel">
         <h3>比較画面</h3>
@@ -286,9 +286,17 @@ function detectRotationForVideo(video){
     const n=Number(mode);
     return Number.isFinite(n)?((n%360)+360)%360:0;
   }
-  // 2in1 / タブレットでは画面の回転角をカメラ補正に使う。
-  // 横向きに戻れば angle=0 に戻るため、90°補正が残り続けない。
-  return screenAngle();
+  // Auto uses the actual image and its display box, not the device angle.
+  // Browsers may still return landscape camera frames while the device is
+  // held upright. Rotate only the rendered image when its aspect orientation
+  // disagrees with the available view; raw camera frames remain untouched.
+  if(!video?.videoWidth||!video?.videoHeight)return 0;
+  let box=video.parentElement?.getBoundingClientRect?.();
+  if(!box||!box.width||!box.height)box=$('#workspace').getBoundingClientRect();
+  if(!box?.width||!box?.height)return 0;
+  const framePortrait=box.height>box.width;
+  const imagePortrait=video.videoHeight>video.videoWidth;
+  return framePortrait!==imagePortrait?90:0;
 }
 function transformScaleForQuarterTurn(video){
   const rot=Math.abs(state.rotationDeg)%180;
