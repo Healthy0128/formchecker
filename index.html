@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Sports Motion Studio v25</title>
+<title>Sports Motion Studio v32</title>
 <style>
 :root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#fff;background:#000;--glass:rgba(18,18,20,.62);--line:rgba(255,255,255,.18);--safe:clamp(10px,1.6vw,20px)}
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}button,input,select{font:inherit}button{cursor:pointer}
 .hidden{display:none!important}
 #workspace{position:relative;width:100%;height:100%;min-height:100%;overflow:hidden;background:#000;touch-action:manipulation}
 .stage,.cell{position:relative;background:#000;overflow:hidden}.stage{position:absolute;inset:0}.stage video,.cell video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
-#compareStage{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;background:#111}.cell{min-width:0;min-height:0}.cmpvid{opacity:0}.cmpvid.front{opacity:1}
+#compareStage{position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:1fr;gap:2px;background:#111}.cell{min-width:0;min-height:0}.cmpvid{opacity:0}.cmpvid.front{opacity:1}
 .cellLabel,.status{position:absolute;z-index:6;background:rgba(0,0,0,.48);backdrop-filter:blur(7px);border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:999px;padding:6px 10px;font-size:clamp(11px,1.2vw,13px)}
 .cellLabel{left:10px;top:10px}.status{right:var(--safe);top:var(--safe)}
 .wait{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#050505;color:#fff;z-index:5;text-align:center;padding:18px}.wait strong{font-size:clamp(18px,3vw,28px)}.wait small{color:#c9cdd2}.waitbar{width:min(360px,72%);height:6px;background:#2d2d32;border-radius:999px;overflow:hidden}.waitbar span{display:block;height:100%;width:0;background:#fff;transition:width .2s}
@@ -37,7 +37,8 @@
 .menuBody{overflow:auto;padding-right:2px;scrollbar-width:thin}.menuPanel{padding:12px 0;border-top:1px solid rgba(255,255,255,.12)}.menuPanel h3{font-size:13px;margin:0 0 8px;color:#f1f1f2}.row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0;font-size:13px}.row select,.row input[type=number]{max-width:145px;background:#222;color:#fff;border:1px solid var(--line);border-radius:8px;padding:7px}.note{font-size:11px;color:#b9bbc1;line-height:1.45;margin:8px 0}.meter{height:6px;background:#2e3034;border-radius:999px;overflow:hidden}.meter>span{display:block;height:100%;background:#eee;width:0}.compareInputs{display:grid;grid-template-columns:1fr 1fr;gap:7px}.compareInputs label{font-size:12px;display:grid;grid-template-columns:1fr 64px;align-items:center;gap:6px}.compareInputs input{width:64px;background:#222;color:#fff;border:1px solid var(--line);border-radius:8px;padding:6px}.preview-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}.preview-strip img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:7px;background:#222}.rec{color:#ff5d5d;font-weight:700}
 #chunkCountdown{position:absolute;left:50%;top:max(18px,env(safe-area-inset-top));transform:translateX(-50%);z-index:40;max-width:min(92%,560px);padding:12px 18px;border-radius:16px;background:rgba(0,0,0,.70);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(12px);font-size:clamp(16px,2.3vw,24px);font-weight:700;text-align:center;pointer-events:none}
 
-@media(max-width:700px){#playPauseBtn{min-width:104px;padding:10px 14px}#bottomDock{width:calc(100% - 16px);bottom:max(8px,env(safe-area-inset-bottom));border-radius:14px}#bottomDock button{padding:8px 9px}#compareStage{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}#overlayControls button{padding:11px 14px}}
+@media(max-width:700px){#playPauseBtn{min-width:104px;padding:10px 14px}#bottomDock{width:calc(100% - 16px);bottom:max(8px,env(safe-area-inset-bottom));border-radius:14px}#bottomDock button{padding:8px 9px}#overlayControls button{padding:11px 14px}}
+@media(orientation:portrait){#compareStage{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}}
 @media(max-width:430px){#bottomDock{justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap}.dockGroup{flex-wrap:nowrap}#menuToggle{top:18%}}
 </style>
 </head>
@@ -49,7 +50,7 @@
     <div id="status" class="status">停止中</div>
   </div>
   <div id="compareStage" class="hidden">
-    <div class="cell"><video id="cmp0" class="cmpvid front" muted playsinline></video><span id="lab0" class="cellLabel">現在</span><div class="wait cellWait"></div></div>
+    <div class="cell"><video id="cmp0" class="cmpvid front" muted playsinline></video><span id="lab0" class="cellLabel">0秒前</span><div class="wait cellWait"></div></div>
     <div class="cell"><video id="cmp1" class="cmpvid front" muted playsinline></video><span id="lab1" class="cellLabel">10秒前</span><div class="wait cellWait"></div></div>
     <div class="cell"><video id="cmp2" class="cmpvid front" muted playsinline></video><span id="lab2" class="cellLabel">20秒前</span><div class="wait cellWait"></div></div>
     <div class="cell"><video id="cmp3" class="cmpvid front" muted playsinline></video><span id="lab3" class="cellLabel">30秒前</span><div class="wait cellWait"></div></div>
@@ -71,7 +72,13 @@
       <span id="timeLabel" class="dockLabel">0.00秒</span>
     </div>
     <div id="compareControls" class="dockGroup hidden">
-      <span class="dockLabel">比較</span><button id="comparePlayPauseBtn">Ⅱ 一時停止</button><button id="resyncBtn">設定位置へ戻る</button>
+      <span class="dockLabel">比較再生</span>
+      <button id="comparePlayPauseBtn">Ⅱ 一時停止</button>
+      <button id="resyncBtn">設定位置へ戻る</button>
+      <button id="cmpBackBtn">−5秒</button>
+      <button id="cmpPrevFrame">◀1F</button>
+      <button id="cmpNextFrame">1F▶</button>
+      <button id="cmpFwdBtn">＋5秒</button>
     </div>
     <div id="bufferControls" class="dockGroup hidden">
       <span class="dockLabel">蓄積 <span id="bufferLabel">0秒</span></span>
@@ -80,7 +87,7 @@
 
   <button id="menuToggle" aria-expanded="false" aria-controls="menuDrawer">MENU</button>
   <aside id="menuDrawer" aria-label="設定メニュー">
-    <div class="drawerHead"><h2>Sports Motion Studio v25</h2><button id="closeMenu">閉じる</button></div>
+    <div class="drawerHead"><h2>Sports Motion Studio v30</h2><button id="closeMenu">閉じる</button></div>
     <div class="menuBody">
       <div class="modes">
         <button data-mode="live" class="active">リアルチェック</button>
@@ -109,7 +116,7 @@
       </section>
       <section id="recordPanel" class="menuPanel">
         <h3>録画</h3><div class="row"><label>状態</label><span id="recState">停止中</span></div>
-        <p class="note">録画はリアルチェック・遅延・比較のすべてで利用できます。録画するのはカメラの通常映像1画面で、比較画面4枚を合成して録画することはありません。左右反転・向き補正を反映し、30分ごとに自動保存して録画を継続します。区切りの10秒前からカウントダウンします。</p>
+        <p class="note">録画は全モードで使えます。通常映像を30分ごとに分割保存し、区切りの10秒前からカウントダウンします。</p>
       </section>
       <section class="menuPanel"><h3>静止画プレビュー</h3><div id="strip" class="preview-strip"></div></section>
     </div>
@@ -123,11 +130,14 @@ const playback=$('#playback');
 const cmp=[0,1,2,3].map(i=>$('#cmp'+i));
 const cellWait=$$('.cellWait');
 
-const state={mode:'live',stream:null,recorder:null,recordingStartMs:0,recordChunkTimer:null,countdownTimer:null,recordRecorder:null,recordChunks:[],recordCanvas:null,recordStream:null,recordSourceVideo:null,recordRAF:0,recordChunkNo:0,chunkRolling:false,manualRecordStop:false,paused:false,mime:'',recordedSec:0,deviceId:'',cameraChoice:'environment',mirrorCameraKey:'',rotationDeg:0,orientationMode:'auto',orientationTimer:0};
+const state={mode:'live',stream:null,recorder:null,recordingStartMs:0,recordChunkTimer:null,countdownTimer:null,recordRecorder:null,recordChunks:[],recordCanvas:null,recordStream:null,recordSourceVideo:null,recordRAF:0,recordChunkNo:0,chunkRolling:false,manualRecordStop:false,paused:false,mime:'',recordedSec:0,deviceId:'',cameraChoice:'environment',mirrorCameraKey:'',mirrorTouched:false,rotationDeg:0,orientationMode:'auto',orientationTimer:0,compareCanvas:null,compareCtx:null,compareStream:null,compareRAF:0,compareLastDraw:0};
 const RECORD_CHUNK_MS=30*60*1000;
 const RECORD_COUNTDOWN_SEC=10;
 const DELAY_BUFFER_MAX_SEC=600;
-const DELAY_BUFFER_BITRATE=700000; // 遅延表示専用。長時間安定性を優先した軽量設定
+const DELAY_BUFFER_BITRATE=700000; // 遅延表示専用
+const COMPARE_BUFFER_BITRATE=360000; // 比較2遅延画面用はさらに軽量化
+const COMPARE_FPS=15;
+const COMPARE_MAX_LONG_SIDE=640;
 const DELAY_CHUNK_MS=1000;
 
 function bestMime(){
@@ -139,7 +149,7 @@ function bestMime(){
 
 class MSEPlayer{
   constructor(video){
-    this.video=video;this.mediaSource=null;this.sourceBuffer=null;this.url=null;this.queue=[];this.ready=false;this.mime='';this.started=false;this.offset=0;this.live=false;this.lastSync=0;
+    this.video=video;this.mediaSource=null;this.sourceBuffer=null;this.url=null;this.queue=[];this.ready=false;this.mime='';this.started=false;this.offset=0;this.live=false;this.lastSync=0;this.lastProgressAt=0;this.lastCurrentTime=-1;
   }
   async init(mime){
     this.destroy();this.mime=mime;this.mediaSource=new MediaSource();this.url=URL.createObjectURL(this.mediaSource);this.video.srcObject=null;this.video.src=this.url;this.video.muted=true;this.video.playsInline=true;this.video.preload='auto';
@@ -153,7 +163,7 @@ class MSEPlayer{
     this.ready=false;this.started=false;this.live=false;this.queue=[];if(this.video){try{this.video.pause()}catch{};this.video.srcObject=null;this.video.removeAttribute('src');try{this.video.load()}catch{}}
     if(this.url){try{URL.revokeObjectURL(this.url)}catch{}this.url=null}this.sourceBuffer=null;this.mediaSource=null;
   }
-  push(buf){if(!this.ready)return;this.queue.push(buf);this._pump();}
+  push(buf){if(!this.ready)return;if(this.queue.length>=8){console.warn('MSE入力が混雑したため古い未処理チャンクを破棄しました');this.queue.shift()}this.queue.push(buf);this._pump();}
   _trimOldBuffer(){
     if(!this.ready||!this.sourceBuffer||this.sourceBuffer.updating)return false;
     const b=this.sourceBuffer.buffered;if(!b.length)return false;
@@ -168,39 +178,65 @@ class MSEPlayer{
     if(this._trimOldBuffer())return;
     if(!this.queue.length)return;
     const b=this.queue.shift();
-    try{this.sourceBuffer.appendBuffer(b)}catch(e){this.queue.unshift(b);setTimeout(()=>this._pump(),80);return}
+    try{this.sourceBuffer.appendBuffer(b)}catch(e){console.error('MSE appendBuffer failed',e);this.queue.shift()}
   }
   end(){try{if(this.mediaSource&&this.mediaSource.readyState==='open'&&!this.sourceBuffer?.updating)this.mediaSource.endOfStream()}catch{}}
   bufferedEnd(){const b=this.video.buffered;return b.length?b.end(b.length-1):0}
   bufferedStart(){const b=this.video.buffered;return b.length?b.start(0):0}
   available(){return Math.max(0,this.bufferedEnd()-this.bufferedStart())}
   startDelay(sec){
-    this.live=false;this.offset=sec;const end=this.bufferedEnd();if(end<sec)return false;const target=Math.max(this.bufferedStart()+0.08,end-sec);try{this.video.currentTime=target}catch{};this.video.playbackRate=1;this.video.play().catch(()=>{});this.started=true;return true;
+    this.live=false;this.offset=sec;const end=this.bufferedEnd();if(end<sec)return false;const safety=sec<=0?1.25:0.08;const target=Math.max(this.bufferedStart()+0.08,Math.min(end-0.08,end-Math.max(sec,safety)));try{this.video.currentTime=target}catch{};this.video.playbackRate=1;this.video.play().catch(()=>{});this.started=true;this.lastCurrentTime=this.video.currentTime;this.lastProgressAt=performance.now();return true;
   }
   maintain(){
     if(!this.started||this.live)return;
-    // 通常運転中は currentTime を変更しない。周期シークは黒ちらつきの原因になる。
-    if(this.video.paused && !this.video.ended){this.video.play().catch(()=>{})}
-    if(this.video.playbackRate!==1)this.video.playbackRate=1;
+    const v=this.video,b=v.buffered;if(!b.length)return;
+    const start=b.start(0),end=b.end(b.length-1);
+    const now=performance.now();
+
+    // 通常再生中は「理想の遅延位置」を追いかけない。
+    // 一度 offset 秒前へ合わせたら、その後は1倍速で連続再生する。
+    // これにより同じ短い区間へ何度も戻るループを防ぐ。
+    if(Math.abs(v.playbackRate-1)>0.001)v.playbackRate=1;
+
+    // バッファ削除などで現在位置が保持範囲の外に出た場合だけ、
+    // 現在位置より前方の安全な地点へ復帰する。設定遅延位置への再同期はしない。
+    if(!Number.isFinite(v.currentTime)||v.currentTime<start-0.02){
+      try{v.currentTime=Math.min(Math.max(start+0.12,start),end-0.12)}catch{}
+      v.play().catch(()=>{});
+      this.lastCurrentTime=v.currentTime;this.lastProgressAt=now;
+      return;
+    }
+    if(v.currentTime>end-0.01){
+      // 末端に追いついた場合は新しいデータを待つ。巻き戻さない。
+      if(v.paused&&end-v.currentTime>0.04)v.play().catch(()=>{});
+      this.lastCurrentTime=v.currentTime;
+      return;
+    }
+
+    // paused=false のままフレーム更新だけ止まるブラウザへの復旧。
+    // 過去へ戻さず、現在位置からごく少し前へ進める。
+    // 再生中は補正シークをしない。停止時刻を観測するだけ。
+    if((v.paused||v.ended)&&end-v.currentTime>0.12)v.play().catch(()=>{});
   }
   resync(){
     if(!this.started||this.live)return false;
     const end=this.bufferedEnd();if(end<=0)return false;
-    const target=Math.max(this.bufferedStart()+0.08,end-this.offset);
+    const safety=this.offset<=0?1.25:0.08;const target=Math.max(this.bufferedStart()+0.08,Math.min(end-0.08,end-Math.max(this.offset,safety)));
     try{this.video.currentTime=target}catch{return false}
-    this.video.playbackRate=1;this.video.play().catch(()=>{});return true;
+    this.video.playbackRate=1;this.video.play().catch(()=>{});this.lastCurrentTime=this.video.currentTime;this.lastProgressAt=performance.now();return true;
   }
   pause(){this.video.pause()}
-  resume(){this.video.play().catch(()=>{})}
-  seek(delta){const b=this.video.buffered;if(!b.length)return;const lo=b.start(0)+0.05,hi=b.end(b.length-1)-0.05;this.video.currentTime=Math.max(lo,Math.min(hi,this.video.currentTime+delta));this.video.pause();this.started=true;}
+  resume(){this.lastCurrentTime=this.video.currentTime;this.lastProgressAt=performance.now();this.video.play().catch(()=>{})}
+  seek(delta){const b=this.video.buffered;if(!b.length)return;const lo=b.start(0)+0.05,hi=b.end(b.length-1)-0.05;this.video.currentTime=Math.max(lo,Math.min(hi,this.video.currentTime+delta));this.video.pause();this.started=true;this.lastCurrentTime=this.video.currentTime;this.lastProgressAt=performance.now();}
 }
 
 const mainMSE=new MSEPlayer(playback);
-const compareMSE=cmp.map(v=>new MSEPlayer(v));
-const allMSE=[mainMSE,...compareMSE];
+const compareMSE=new MSEPlayer(cmp[0]);
+const allMSE=[mainMSE,compareMSE];
 function activeMSEPlayers(){
   if(state.mode==='delay')return [mainMSE];
-  if(state.mode==='compare')return compareMSE;
+  // 比較の0秒画面はライブ直結。遅延デコードは残り2画面だけ。
+  if(state.mode==='compare')return [compareMSE];
   return [];
 }
 let singleRunning=false,compareRunning=false;
@@ -277,7 +313,7 @@ function applyCameraDefaultMirror(choice,stream=null,force=false){
   const settings=track?.getSettings?.()||{};
   const key=`${choice}|${settings.deviceId||''}|${settings.facingMode||''}`;
   if(!force&&state.mirrorCameraKey===key)return;
-  $('#mirror').checked=defaultMirrorForCamera(choice,stream);
+  if(!state.mirrorTouched||force)$('#mirror').checked=defaultMirrorForCamera(choice,stream);
   state.mirrorCameraKey=key;
   setMirror();
 }
@@ -304,51 +340,82 @@ function startSingleIfReady(force=false){
   if(!singleRunning||force){singleRunning=mainMSE.startDelay(delay);$('#singleWait').classList.toggle('hidden',!singleRunning)}
 }
 function startCompareIfReady(force=false){
-  if(!state.stream||state.mode!=='compare')return;const offs=compareOffsets(),need=Math.max(...offs),have=availableSec();
+  if(!state.stream||state.mode!=='compare')return;
+  const offs=compareOffsets(),need=Math.max(...offs),have=availableSec();
   if(have<need){compareRunning=false;cmp.forEach(v=>v.pause());updateWaitingUI();return}
   if(compareRunning&&!force)return;
   clearCompareLive();
-  offs.forEach((o,i)=>{
-    $('#lab'+i).textContent=o===0?'現在':`${o}秒前`;
-    if(o===0){showLive(cmp[i])}
-    else{restoreMSEVideo(compareMSE[i]);compareMSE[i].startDelay(o)}
-  });
-  compareRunning=true;cellWait.forEach(w=>w.classList.add('hidden'));
+  const player=compareMSE;
+  for(let i=0;i<cmp.length;i++){
+    const v=cmp[i],o=offs[i];$('#lab'+i).textContent=`${o}秒前`;
+    if(v.src!==player.url){v.srcObject=null;v.src=player.url;v.load()}
+    v.muted=true;v.playsInline=true;v.playbackRate=1;
+    const end=player.bufferedEnd(),safety=o===0?1.25:0.08;
+    const target=Math.max(player.bufferedStart()+0.08,Math.min(end-0.08,end-Math.max(o,safety)));
+    try{v.currentTime=target}catch{}
+  }
+  cmp.forEach(v=>v.play().catch(()=>{}));player.started=true;
+  state.paused=false;
+  $('#comparePlayPauseBtn').textContent='Ⅱ 一時停止';
+  compareRunning=true;cellWait.forEach(w=>w.classList.add('hidden'));$('#status').textContent='比較：共通ローリングバッファ・4画面';
 }
 function showLiveMain(){if(!state.stream)return;if(playback.srcObject!==state.stream){try{playback.pause()}catch{};playback.removeAttribute('src');try{playback.load()}catch{};playback.srcObject=state.stream;playback.muted=true;playback.playsInline=true;playback.onloadedmetadata=()=>refreshOrientation(playback);playback.play().catch(()=>{})}else{refreshOrientation(playback)}singleRunning=false;$('#singleWait').classList.add('hidden');$('#status').textContent='リアルチェック'}
 function syncModeWhenReady(){if(state.mode==='live'){showLiveMain();return}if(state.mode==='compare')startCompareIfReady(false);else startSingleIfReady(false)}
 function updateToolbarForMode(){const live=state.mode==='live',delay=state.mode==='delay',compare=state.mode==='compare';['backBtn','fwdBtn','prevFrame','nextFrame','delayResetBtn'].forEach(id=>{$('#'+id).disabled=!delay;$('#'+id).title=delay?'':'遅延モードで使用します'});$('#recordBtn').classList.remove('hidden');$('#recordPanel').classList.remove('hidden');$('#delayControls').classList.toggle('hidden',!delay);$('#compareControls').classList.toggle('hidden',!compare);$('#bufferControls').classList.toggle('hidden',live);$('#playPauseBtn').classList.toggle('hidden',compare);$('#overlayControls').classList.toggle('aboveDock',delay||compare);$('#bottomDock').classList.toggle('hidden',live);$('#playPauseBtn').textContent='Ⅱ 一時停止';$('#comparePlayPauseBtn').textContent='Ⅱ 一時停止';state.paused=false}
 function stopDelayBuffer(){
   if(state.recorder&&state.recorder.state!=='inactive'){try{state.recorder.stop()}catch{}}
-  state.recorder=null;state.recordedSec=0;allMSE.forEach(p=>p.destroy());updateBufferUI();
+  state.recorder=null;stopCompareBufferSource();state.recordedSec=0;allMSE.forEach(p=>p.destroy());updateBufferUI();
 }
+function stopCompareBufferSource(){
+  if(state.compareRAF)cancelAnimationFrame(state.compareRAF);state.compareRAF=0;state.compareLastDraw=0;
+  if(state.compareStream){state.compareStream.getTracks().forEach(t=>{try{t.stop()}catch{}});state.compareStream=null}
+  state.compareCanvas=null;state.compareCtx=null;
+}
+async function makeCompareBufferStream(){
+  // hidden playback video is used only as a lightweight source for the comparison buffer.
+  showLive(playback);
+  if(!playback.videoWidth)await new Promise(resolve=>{const done=()=>resolve();playback.addEventListener('loadedmetadata',done,{once:true});setTimeout(resolve,1200)});
+  const sw=Math.max(1,playback.videoWidth||640),sh=Math.max(1,playback.videoHeight||360);
+  const scale=Math.min(1,COMPARE_MAX_LONG_SIDE/Math.max(sw,sh));
+  const c=document.createElement('canvas');c.width=Math.max(2,Math.round(sw*scale));c.height=Math.max(2,Math.round(sh*scale));
+  const x=c.getContext('2d',{alpha:false});state.compareCanvas=c;state.compareCtx=x;
+  const frameMs=1000/COMPARE_FPS;
+  const draw=now=>{
+    if(!state.compareCanvas||state.mode!=='compare'||!state.stream)return;
+    if(!state.compareLastDraw||now-state.compareLastDraw>=frameMs){
+      state.compareLastDraw=now;
+      try{x.drawImage(playback,0,0,c.width,c.height)}catch{}
+    }
+    state.compareRAF=requestAnimationFrame(draw);
+  };
+  state.compareRAF=requestAnimationFrame(draw);
+  state.compareStream=c.captureStream(COMPARE_FPS);
+  return state.compareStream;
+}
+
 async function startDelayBuffer(){
   if(!state.stream||state.recorder)return;
   if(!window.MediaSource)throw new Error('このブラウザは連続遅延再生に必要なMediaSourceに対応していません。ChromeまたはEdgeを使用してください。');
   const mime=bestMime();if(!mime)throw new Error('このブラウザで利用できるWebM/MediaSource形式が見つかりません。ChromeまたはEdgeを推奨します。');state.mime=mime;
   await initMSEPlayers(mime);
   state.recordedSec=0;state.recordingStartMs=performance.now();
-  const opts={mimeType:mime,videoBitsPerSecond:DELAY_BUFFER_BITRATE};const r=new MediaRecorder(state.stream,opts);state.recorder=r;
-  r.ondataavailable=async e=>{if(!e.data||!e.data.size)return;try{const ab=await e.data.arrayBuffer();activeMSEPlayers().forEach(p=>p.push(ab));state.recordedSec=(performance.now()-state.recordingStartMs)/1000;updateBufferUI();syncModeWhenReady()}catch(err){console.error(err)}};
+  const bufferStream=state.mode==='compare'?await makeCompareBufferStream():state.stream;
+  const opts={mimeType:mime,videoBitsPerSecond:state.mode==='compare'?COMPARE_BUFFER_BITRATE:DELAY_BUFFER_BITRATE};const r=new MediaRecorder(bufferStream,opts);state.recorder=r;
+  r.ondataavailable=async e=>{if(!e.data||!e.data.size)return;try{const ab=await e.data.arrayBuffer();const p=activeMSEPlayers()[0];if(p)p.push(ab);state.recordedSec=(performance.now()-state.recordingStartMs)/1000;updateBufferUI();syncModeWhenReady()}catch(err){console.error(err)}};
   r.start(DELAY_CHUNK_MS);$('#status').textContent='撮影中';updateWaitingUI();
 }
 async function setMode(m){
   if(m===state.mode)return;
   const hadStream=!!state.stream;
-  const prev=state.mode;
-  if(hadStream){
-    const names={live:'リアルチェック',delay:'遅延モード',compare:'比較モード'};
-    const ok=confirm(`${names[prev]}から${names[m]}へ切り替えます。\nカメラの使用方法を切り替えるため、カメラを一度停止して再起動します。よろしいですか？`);
-    if(!ok)return;
-    stopCamera();
-  }
+  stopDelayBuffer();
   state.mode=m;
   $$('.modes button').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
   $('#compareStage').classList.toggle('hidden',m!=='compare');
   $('#singleStage').classList.toggle('hidden',m==='compare');
   stopAllPlayback();
   updateToolbarForMode();updateWaitingUI();
-  if(hadStream)await startCamera();
+  if(hadStream&&m!=='live')await startDelayBuffer();
+  else if(hadStream&&m==='live')showLiveMain();
 }
 $$('.modes button').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode).catch(e=>alert(e.message))));
 
@@ -411,6 +478,7 @@ async function startCamera(){
   updateWaitingUI();syncModeWhenReady();
 }
 function stopCamera(){
+  stopCompareBufferSource();
   clearRecordingChunkTimer();if(state.recorder&&state.recorder.state!=='inactive'){try{state.recorder.stop()}catch{}}state.recorder=null;
   if(state.recordRecorder&&state.recordRecorder.state==='recording'){state.manualRecordStop=true;state.chunkRolling=false;try{state.recordRecorder.stop()}catch{}}
   cleanupDisplayRecording();
@@ -478,33 +546,48 @@ refreshCameraList(false);
 
 $('#startBtn').addEventListener('click',()=>startCamera().catch(e=>alert('カメラを開始できません: '+e.message)));
 $('#delaySel').addEventListener('change',()=>{singleRunning=false;updateWaitingUI();startSingleIfReady(true)});
-$('#mirror').addEventListener('change',setMirror);setMirror();
+$('#mirror').addEventListener('change',()=>{state.mirrorTouched=true;setMirror()});setMirror();
 $('#orientationSel').addEventListener('change',e=>setOrientationMode(e.target.value));setOrientationMode('auto');
 [0,1,2,3].forEach(i=>{const el=$('#off'+i);el.addEventListener('change',()=>{clampOffset(el);compareRunning=false;updateWaitingUI();startCompareIfReady(true)})});
 $('#resyncBtn').addEventListener('click',()=>{
   if(!state.stream||state.mode!=='compare')return;
   const offs=compareOffsets(),need=Math.max(...offs);
   if(availableSec()<need){compareRunning=false;updateWaitingUI();return}
+  const player=compareMSE,end=player.bufferedEnd(),start=player.bufferedStart();
+  cmp.forEach((v,i)=>{const o=offs[i],safety=o===0?1.25:0.08;$('#lab'+i).textContent=`${o}秒前`;
+    if(v.src!==player.url){v.srcObject=null;v.src=player.url;v.load()}
+    const t=Math.max(start+0.08,Math.min(end-0.08,end-Math.max(o,safety)));
+    try{v.currentTime=t}catch{};v.playbackRate=1;v.play().catch(()=>{});
+  });player.started=true;
   state.paused=false;
-  offs.forEach((o,i)=>{
-    $('#lab'+i).textContent=o===0?'現在':`${o}秒前`;
-    if(o===0){showLive(cmp[i])}
-    else{restoreMSEVideo(compareMSE[i]);compareMSE[i].offset=o;if(!compareMSE[i].started)compareMSE[i].startDelay(o);else compareMSE[i].resync()}
-  });
   $('#comparePlayPauseBtn').textContent='Ⅱ 一時停止';
-  compareRunning=true;cellWait.forEach(w=>w.classList.add('hidden'));
+  compareRunning=true;cellWait.forEach(w=>w.classList.add('hidden'));$('#status').textContent='比較：共通ローリングバッファ・4画面';
+  revealTransport();
 });
+
+function pauseCompareAfterSeek(){
+  state.paused=true;
+  cmp.forEach(v=>v.pause());
+  $('#comparePlayPauseBtn').textContent='▶ 再生';
+  revealTransport();
+}
+function seekCompareAll(delta){
+  if(!state.stream||state.mode!=='compare'||!compareRunning)return;
+  cmp.forEach(v=>{const b=v.buffered;if(!b.length)return;const lo=b.start(0)+0.05,hi=b.end(b.length-1)-0.05;try{v.currentTime=Math.max(lo,Math.min(hi,v.currentTime+delta))}catch{}});
+  pauseCompareAfterSeek();
+}
 
 $('#comparePlayPauseBtn').addEventListener('click',()=>{
   if(!state.stream||state.mode!=='compare'||!compareRunning)return;
   state.paused=!state.paused;
-  const offs=compareOffsets();
-  cmp.forEach((v,i)=>{
-    if(offs[i]===0){if(state.paused)v.pause();else v.play().catch(()=>{})}
-    else{if(state.paused)compareMSE[i].pause();else compareMSE[i].resume()}
-  });
+  cmp.forEach(v=>state.paused?v.pause():v.play().catch(()=>{}));
   $('#comparePlayPauseBtn').textContent=state.paused?'▶ 再生':'Ⅱ 一時停止';
+  revealTransport();
 });
+$('#cmpBackBtn').addEventListener('click',()=>seekCompareAll(-5));
+$('#cmpFwdBtn').addEventListener('click',()=>seekCompareAll(5));
+$('#cmpPrevFrame').addEventListener('click',()=>seekCompareAll(-1/COMPARE_FPS));
+$('#cmpNextFrame').addEventListener('click',()=>seekCompareAll(1/COMPARE_FPS));
 
 $('#playPauseBtn').addEventListener('click',()=>{if(!state.stream||state.mode==='compare')return;state.paused=!state.paused;if(state.mode==='live'){if(state.paused)playback.pause();else playback.play().catch(()=>{})}else{if(state.paused)mainMSE.pause();else mainMSE.resume()}$('#playPauseBtn').textContent=state.paused?'▶ 再生':'Ⅱ 一時停止';revealTransport()});
 $('#delayResetBtn').addEventListener('click',()=>{if(!state.stream||state.mode!=='delay'||!singleRunning)return;state.paused=false;mainMSE.offset=Number($('#delaySel').value);mainMSE.resync();$('#playPauseBtn').textContent='Ⅱ 一時停止';revealTransport()});
@@ -614,9 +697,9 @@ setInterval(()=>{if(state.stream){
   if(state.mode==='live')return;
   if(state.recorder)state.recordedSec=(performance.now()-state.recordingStartMs)/1000;
   updateBufferUI();
-  // 再生位置は追いかけてシークしない。停止してしまった場合だけ再開する。
+  // 再生位置は追いかけてシークしない。詰まりや範囲外だけ前方向に復旧する。
   if(singleRunning&&!state.paused)mainMSE.maintain();
-  if(compareRunning&&!state.paused)compareMSE.forEach((p,i)=>{if(compareOffsets()[i]>0)p.maintain()});
+  if(compareRunning&&!state.paused)compareMSE.maintain();
   syncModeWhenReady();
 }},250);
 
