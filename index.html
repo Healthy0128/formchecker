@@ -116,7 +116,7 @@
         <div class="row"><label for="orientationSel">カメラ向き</label><select id="orientationSel"><option value="auto" selected>自動</option><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></div>
         <div class="row"><label>左右反転</label><input id="mirror" type="checkbox"></div>
         <div class="meter"><span id="meter"></span></div>
-        <p class="note">カメラは時間制限なく連続使用できます。遅延・比較では直近10分だけをローリング保持し、それより古い映像は自動で破棄します。</p><p class="note">カメラの標準解像度・アスペクト比・画角を維持し、端末を回しても撮影範囲を変更しません。向きの「自動」は表示だけを回転します。合わない場合は0° / 90° / 180° / 270°で手動補正できます。表示・遅延・比較・静止画・録画に同じ向きを反映します。</p>
+        <p class="note">カメラは時間制限なく連続使用できます。遅延・比較では直近10分だけをローリング保持し、それより古い映像は自動で破棄します。</p><p class="note">撮影映像は16:9（960×540目安）で固定し、端末を回しても撮影範囲を変えません。向きの「自動」は表示だけを回転します。合わない場合は0° / 90° / 180° / 270°で手動補正できます。表示・遅延・比較・静止画・録画に同じ向きを反映します。</p>
       </section>
       <section class="menuPanel">
         <h3>比較画面</h3>
@@ -485,9 +485,10 @@ async function refreshCameraList(preferCurrent=true){
 }
 
 function cameraConstraints(){
-  // Leave resolution and aspect ratio to the camera/browser defaults so the
-  // camera's native framing is preserved. Rotation is applied only at render.
-  const video={frameRate:{ideal:30,max:30}};
+  // Keep the source's established landscape framing in either device
+  // orientation. The app rotates presentation only; it never switches to a
+  // portrait capture/crop when the screen is turned upright.
+  const video={width:{ideal:960},height:{ideal:540},aspectRatio:{ideal:16/9},frameRate:{ideal:30,max:30}};
   const choice=state.cameraChoice||'environment';
   if(choice==='user'||choice==='environment') video.facingMode={exact:choice};
   else if(choice.startsWith('device:')) video.deviceId={exact:choice.slice(7)};
@@ -555,7 +556,7 @@ $('#cameraSel').addEventListener('change',async e=>{
       if((next==='user'||next==='environment') && err?.name==='OverconstrainedError'){
         try{
           stopCamera();
-          const video={frameRate:{ideal:30,max:30},facingMode:{ideal:next}};
+          const video={width:{ideal:960},height:{ideal:540},aspectRatio:{ideal:16/9},frameRate:{ideal:30,max:30},facingMode:{ideal:next}};
           const stream=await navigator.mediaDevices.getUserMedia({video,audio:false});
           state.stream=stream;
           applyCameraDefaultMirror(state.cameraChoice,stream);
