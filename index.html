@@ -116,7 +116,7 @@
         <div class="row"><label for="orientationSel">カメラ向き</label><select id="orientationSel"><option value="auto" selected>自動</option><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></div>
         <div class="row"><label>左右反転</label><input id="mirror" type="checkbox"></div>
         <div class="meter"><span id="meter"></span></div>
-        <p class="note">カメラは時間制限なく連続使用できます。遅延・比較では直近10分だけをローリング保持し、それより古い映像は自動で破棄します。</p><p class="note">カメラ向きの「自動」は映像と表示枠の縦横比を見て必要なときだけ90°回転します。合わない場合は0° / 90° / 180° / 270°で手動補正できます。表示・遅延・比較・静止画・録画に同じ向きを反映します。</p>
+        <p class="note">カメラは時間制限なく連続使用できます。遅延・比較では直近10分だけをローリング保持し、それより古い映像は自動で破棄します。</p><p class="note">カメラ映像は16:9（960×540目安）で固定し、端末を回しても撮影の画角を変えません。向きの「自動」は表示だけを回転します。合わない場合は0° / 90° / 180° / 270°で手動補正できます。表示・遅延・比較・静止画・録画に同じ向きを反映します。</p>
       </section>
       <section class="menuPanel">
         <h3>比較画面</h3>
@@ -279,20 +279,6 @@ let singleRunning=false,compareRunning=false;
 function clampOffset(el){let v=Number(el.value);if(!Number.isFinite(v))v=0;v=Math.round(Math.min(DELAY_BUFFER_MAX_SEC,Math.max(0,v)));el.value=String(v);return v}
 function compareOffsets(){return [0,1,2,3].map(i=>clampOffset($('#off'+i)))}
 function requiredForMode(){if(state.mode==='live')return 0;if(state.mode==='compare')return Math.max(...compareOffsets());return Number($('#delaySel').value)}
-function screenAngle(){
-  const raw=(screen.orientation&&Number.isFinite(screen.orientation.angle))?screen.orientation.angle:(Number.isFinite(window.orientation)?window.orientation:0);
-  return ((raw%360)+360)%360;
-}
-function screenIsPortrait(){
-  // screen.orientation を優先し、取得できない環境だけ画面寸法で判定する。
-  const type=screen.orientation?.type||'';
-  if(type.startsWith('portrait'))return true;
-  if(type.startsWith('landscape'))return false;
-  const a=screenAngle();
-  if(a===0||a===180)return true;
-  if(a===90||a===270)return false;
-  return window.innerHeight>=window.innerWidth;
-}
 function detectRotationForVideo(video){
   const mode=state.orientationMode||'auto';
   if(mode!=='auto'){
@@ -499,12 +485,13 @@ async function refreshCameraList(preferCurrent=true){
 }
 
 function preferredCaptureSize(){
-  // 画面の向きと同じ縦横比を要求する。ブラウザ側の向き補正を優先する。
-  return screenIsPortrait()?{width:540,height:960}:{width:960,height:540};
+  // Capture framing stays fixed at 16:9. Device rotation changes presentation
+  // only; it must not ask the camera for a portrait crop or a new field of view.
+  return {width:960,height:540};
 }
 function cameraConstraints(){
   const size=preferredCaptureSize();
-  const video={width:{ideal:size.width},height:{ideal:size.height},frameRate:{ideal:30,max:30}};
+  const video={width:{ideal:size.width},height:{ideal:size.height},aspectRatio:{ideal:16/9},frameRate:{ideal:30,max:30}};
   const choice=state.cameraChoice||'environment';
   if(choice==='user'||choice==='environment') video.facingMode={exact:choice};
   else if(choice.startsWith('device:')) video.deviceId={exact:choice.slice(7)};
@@ -572,7 +559,7 @@ $('#cameraSel').addEventListener('change',async e=>{
       if((next==='user'||next==='environment') && err?.name==='OverconstrainedError'){
         try{
           stopCamera();
-          const size=preferredCaptureSize();const video={width:{ideal:size.width},height:{ideal:size.height},frameRate:{ideal:30,max:30},facingMode:{ideal:next}};
+          const size=preferredCaptureSize();const video={width:{ideal:size.width},height:{ideal:size.height},aspectRatio:{ideal:16/9},frameRate:{ideal:30,max:30},facingMode:{ideal:next}};
           const stream=await navigator.mediaDevices.getUserMedia({video,audio:false});
           state.stream=stream;
           applyCameraDefaultMirror(state.cameraChoice,stream);
@@ -751,14 +738,10 @@ setInterval(()=>{if(state.stream){
 
 function handleOrientationChange(){
   clearTimeout(state.orientationTimer);
-  state.orientationTimer=setTimeout(async()=>{
-    // 同じカメラのまま、端末の向きに合う解像度を再要求する。
-    const track=state.stream?.getVideoTracks?.()[0];
-    const size=preferredCaptureSize();
-    if(track?.applyConstraints){try{await track.applyConstraints({width:{ideal:size.width},height:{ideal:size.height},frameRate:{ideal:30,max:30}})}catch{}}
+  state.orientationTimer=setTimeout(()=>{
+    // Orientation changes affect rendering only. Keep the camera track and
+    // its fixed 16:9 capture constraints untouched to preserve its framing.
     refreshOrientation();
-    // applyConstraints 後に intrinsic size が更新される端末があるため、少し遅れて再判定する。
-    setTimeout(()=>refreshOrientation(),180);
     // 録画中に縦横が変わった場合は、向きが混在しないよう安全にファイルを区切って継続する。
     if(state.recordRecorder&&state.recordRecorder.state==='recording'){
       state.chunkRolling=true;state.manualRecordStop=false;clearRecordingChunkTimer();
