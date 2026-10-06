@@ -141,8 +141,14 @@ const COMPARE_MAX_LONG_SIDE=640;
 const DELAY_CHUNK_MS=1000;
 
 function bestMime(){
-  for(const m of ['video/webm;codecs=vp8','video/webm;codecs=vp9','video/webm']){
-    if(MediaRecorder.isTypeSupported(m) && (!window.MediaSource || MediaSource.isTypeSupported(m))) return m;
+  if(typeof MediaRecorder==='undefined'||typeof MediaRecorder.isTypeSupported!=='function')return '';
+  const Source=window.ManagedMediaSource||window.MediaSource;
+  if(!Source)return '';
+  // iOS Safari records fragmented MP4; WebM-only probing incorrectly
+  // classified Safari as unsupported.
+  const candidates=['video/mp4;codecs="avc1.42E01E,mp4a.40.2"','video/mp4;codecs="avc1.42E01E"','video/mp4','video/webm;codecs=vp8','video/webm;codecs=vp9','video/webm'];
+  for(const m of candidates){
+    try{if(MediaRecorder.isTypeSupported(m)&&(!Source.isTypeSupported||Source.isTypeSupported(m)))return m}catch{}
   }
   return '';
 }
@@ -152,7 +158,7 @@ class MSEPlayer{
     this.video=video;this.mediaSource=null;this.sourceBuffer=null;this.url=null;this.queue=[];this.ready=false;this.mime='';this.started=false;this.offset=0;this.live=false;this.lastSync=0;this.lastProgressAt=0;this.lastCurrentTime=-1;
   }
   async init(mime){
-    this.destroy();this.mime=mime;this.mediaSource=new MediaSource();this.url=URL.createObjectURL(this.mediaSource);this.video.srcObject=null;this.video.src=this.url;this.video.muted=true;this.video.playsInline=true;this.video.preload='auto';
+    this.destroy();this.mime=mime;const Source=window.ManagedMediaSource||window.MediaSource;if(!Source)throw new Error('このブラウザは遅延再生用MediaSourceに対応していません。iOS 17.1以降のSafari、または最新のChrome/Edgeをご利用ください。');this.video.disableRemotePlayback=true;this.mediaSource=new Source();this.url=URL.createObjectURL(this.mediaSource);this.video.srcObject=null;this.video.src=this.url;this.video.muted=true;this.video.playsInline=true;this.video.preload='auto';
     await new Promise((resolve,reject)=>{
       const onOpen=()=>{try{this.sourceBuffer=this.mediaSource.addSourceBuffer(mime);this.sourceBuffer.mode='segments';this.sourceBuffer.addEventListener('updateend',()=>{if(!this._trimOldBuffer())this._pump()});this.ready=true;resolve();this._pump();}catch(e){reject(e)}};
       this.mediaSource.addEventListener('sourceopen',onOpen,{once:true});
@@ -178,7 +184,7 @@ class MSEPlayer{
     if(this._trimOldBuffer())return;
     if(!this.queue.length)return;
     const b=this.queue.shift();
-    try{this.sourceBuffer.appendBuffer(b)}catch(e){console.error('MSE appendBuffer failed',e);this.queue.shift()}
+    try{this.sourceBuffer.appendBuffer(b)}catch(e){console.error('MSE appendBuffer failed',e);queueMicrotask(()=>this._pump())}
   }
   end(){try{if(this.mediaSource&&this.mediaSource.readyState==='open'&&!this.sourceBuffer?.updating)this.mediaSource.endOfStream()}catch{}}
   bufferedEnd(){const b=this.video.buffered;return b.length?b.end(b.length-1):0}
@@ -231,12 +237,14 @@ class MSEPlayer{
 }
 
 const mainMSE=new MSEPlayer(playback);
-const compareMSE=new MSEPlayer(cmp[0]);
-const allMSE=[mainMSE,compareMSE];
+// Every comparison tile owns its MediaSource. A MediaSource URL is not a
+// reusable multi-player transport; sharing one between <video> elements
+// leaves later attachments stalled in Safari and some Chromium builds.
+const compareMSE=cmp.map(v=>new MSEPlayer(v));
+const allMSE=[mainMSE,...compareMSE];
 function activeMSEPlayers(){
   if(state.mode==='delay')return [mainMSE];
-  // 比較の0秒画面はライブ直結。遅延デコードは残り2画面だけ。
-  if(state.mode==='compare')return [compareMSE];
+  if(state.mode==='compare')return compareMSE;
   return [];
 }
 let singleRunning=false,compareRunning=false;
@@ -345,19 +353,18 @@ function startCompareIfReady(force=false){
   if(have<need){compareRunning=false;cmp.forEach(v=>v.pause());updateWaitingUI();return}
   if(compareRunning&&!force)return;
   clearCompareLive();
-  const player=compareMSE;
   for(let i=0;i<cmp.length;i++){
-    const v=cmp[i],o=offs[i];$('#lab'+i).textContent=`${o}秒前`;
+    const v=cmp[i],player=compareMSE[i],o=offs[i];$('#lab'+i).textContent=`${o}秒前`;
     if(v.src!==player.url){v.srcObject=null;v.src=player.url;v.load()}
     v.muted=true;v.playsInline=true;v.playbackRate=1;
     const end=player.bufferedEnd(),safety=o===0?1.25:0.08;
     const target=Math.max(player.bufferedStart()+0.08,Math.min(end-0.08,end-Math.max(o,safety)));
     try{v.currentTime=target}catch{}
   }
-  cmp.forEach(v=>v.play().catch(()=>{}));player.started=true;
+  compareMSE.forEach(p=>{p.started=true});cmp.forEach(v=>v.play().catch(()=>{}));
   state.paused=false;
   $('#comparePlayPauseBtn').textContent='Ⅱ 一時停止';
-  compareRunning=true;cellWait.forEach(w=>w.classList.add('hidden'));$('#status').textContent='比較：共通ローリングバッファ・4画面';
+  compareRunning=true;cellWait.forEach(w=>w.classList.add('hidden'));$('#status').textContent='比較：独立ローリングバッファ・4画面';
 }
 function showLiveMain(){if(!state.stream)return;if(playback.srcObject!==state.stream){try{playback.pause()}catch{};playback.removeAttribute('src');try{playback.load()}catch{};playback.srcObject=state.stream;playback.muted=true;playback.playsInline=true;playback.onloadedmetadata=()=>refreshOrientation(playback);playback.play().catch(()=>{})}else{refreshOrientation(playback)}singleRunning=false;$('#singleWait').classList.add('hidden');$('#status').textContent='リアルチェック'}
 function syncModeWhenReady(){if(state.mode==='live'){showLiveMain();return}if(state.mode==='compare')startCompareIfReady(false);else startSingleIfReady(false)}
@@ -395,13 +402,13 @@ async function makeCompareBufferStream(){
 
 async function startDelayBuffer(){
   if(!state.stream||state.recorder)return;
-  if(!window.MediaSource)throw new Error('このブラウザは連続遅延再生に必要なMediaSourceに対応していません。ChromeまたはEdgeを使用してください。');
-  const mime=bestMime();if(!mime)throw new Error('このブラウザで利用できるWebM/MediaSource形式が見つかりません。ChromeまたはEdgeを推奨します。');state.mime=mime;
+  if(!(window.ManagedMediaSource||window.MediaSource))throw new Error('このブラウザは連続遅延再生に対応していません。iOS 17.1以降のSafari、または最新のChrome/Edgeをご利用ください。');
+  const mime=bestMime();if(!mime)throw new Error('このブラウザで利用できる録画・遅延再生形式がありません。SafariまたはChrome/Edgeを最新版に更新してください。');state.mime=mime;
   await initMSEPlayers(mime);
   state.recordedSec=0;state.recordingStartMs=performance.now();
   const bufferStream=state.mode==='compare'?await makeCompareBufferStream():state.stream;
   const opts={mimeType:mime,videoBitsPerSecond:state.mode==='compare'?COMPARE_BUFFER_BITRATE:DELAY_BUFFER_BITRATE};const r=new MediaRecorder(bufferStream,opts);state.recorder=r;
-  r.ondataavailable=async e=>{if(!e.data||!e.data.size)return;try{const ab=await e.data.arrayBuffer();const p=activeMSEPlayers()[0];if(p)p.push(ab);state.recordedSec=(performance.now()-state.recordingStartMs)/1000;updateBufferUI();syncModeWhenReady()}catch(err){console.error(err)}};
+  r.ondataavailable=async e=>{if(!e.data||!e.data.size)return;try{const ab=await e.data.arrayBuffer();for(const p of activeMSEPlayers())p.push(ab.slice(0));state.recordedSec=(performance.now()-state.recordingStartMs)/1000;updateBufferUI();syncModeWhenReady()}catch(err){console.error(err)}};
   r.start(DELAY_CHUNK_MS);$('#status').textContent='撮影中';updateWaitingUI();
 }
 async function setMode(m){
@@ -553,15 +560,15 @@ $('#resyncBtn').addEventListener('click',()=>{
   if(!state.stream||state.mode!=='compare')return;
   const offs=compareOffsets(),need=Math.max(...offs);
   if(availableSec()<need){compareRunning=false;updateWaitingUI();return}
-  const player=compareMSE,end=player.bufferedEnd(),start=player.bufferedStart();
-  cmp.forEach((v,i)=>{const o=offs[i],safety=o===0?1.25:0.08;$('#lab'+i).textContent=`${o}秒前`;
+  cmp.forEach((v,i)=>{const player=compareMSE[i],end=player.bufferedEnd(),start=player.bufferedStart(),o=offs[i],safety=o===0?1.25:0.08;$('#lab'+i).textContent=`${o}秒前`;
     if(v.src!==player.url){v.srcObject=null;v.src=player.url;v.load()}
     const t=Math.max(start+0.08,Math.min(end-0.08,end-Math.max(o,safety)));
     try{v.currentTime=t}catch{};v.playbackRate=1;v.play().catch(()=>{});
-  });player.started=true;
+    player.started=true;
+  });
   state.paused=false;
   $('#comparePlayPauseBtn').textContent='Ⅱ 一時停止';
-  compareRunning=true;cellWait.forEach(w=>w.classList.add('hidden'));$('#status').textContent='比較：共通ローリングバッファ・4画面';
+  compareRunning=true;cellWait.forEach(w=>w.classList.add('hidden'));$('#status').textContent='比較：独立ローリングバッファ・4画面';
   revealTransport();
 });
 
@@ -638,10 +645,10 @@ async function createRecordingSourceVideo(){
 }
 function downloadRecordingChunk(chunks,mime,chunkNo){
   if(!chunks.length)return;
-  const blob=new Blob(chunks,{type:mime||'video/webm'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  const type=mime||'video/webm';const blob=new Blob(chunks,{type}),url=URL.createObjectURL(blob),a=document.createElement('a');
   const d=new Date();
   const stamp=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0'),'-',String(d.getHours()).padStart(2,'0'),String(d.getMinutes()).padStart(2,'0'),String(d.getSeconds()).padStart(2,'0')].join('');
-  a.href=url;a.download=`sports-record-${stamp}-part${String(chunkNo).padStart(2,'0')}.webm`;a.click();setTimeout(()=>URL.revokeObjectURL(url),2500);
+  const ext=type.toLowerCase().includes('mp4')?'mp4':'webm';a.href=url;a.download=`sports-record-${stamp}-part${String(chunkNo).padStart(2,'0')}.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),2500);
 }
 async function startDisplayRecording(isContinuation=false){
   if(!state.stream)return;
@@ -675,7 +682,7 @@ async function startDisplayRecording(isContinuation=false){
   };
   r.ondataavailable=e=>{if(e.data&&e.data.size)state.recordChunks.push(e.data)};
   r.onstop=()=>{
-    const chunks=[...state.recordChunks];const outMime=r.mimeType||'video/webm';
+    const chunks=[...state.recordChunks];const outMime=r.mimeType||mime||'video/webm';
     const shouldContinue=state.chunkRolling&&!state.manualRecordStop&&!!state.stream;
     clearRecordingChunkTimer();cleanupDisplayRecording();downloadRecordingChunk(chunks,outMime,thisChunkNo);
     state.recordRecorder=null;state.recordChunks=[];
@@ -699,7 +706,7 @@ setInterval(()=>{if(state.stream){
   updateBufferUI();
   // 再生位置は追いかけてシークしない。詰まりや範囲外だけ前方向に復旧する。
   if(singleRunning&&!state.paused)mainMSE.maintain();
-  if(compareRunning&&!state.paused)compareMSE.maintain();
+  if(compareRunning&&!state.paused)compareMSE.forEach(p=>p.maintain());
   syncModeWhenReady();
 }},250);
 
