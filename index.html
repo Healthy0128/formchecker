@@ -154,13 +154,26 @@ const COMPARE_FPS=15;
 const COMPARE_MAX_LONG_SIDE=640;
 const DELAY_CHUNK_MS=1000;
 
+function prefersManagedMediaSource(){
+  // iPhone/iPad Safari exposes ManagedMediaSource as its reliable MSE path.
+  // Windows Edge should keep using the long-established MediaSource path.
+  return /iPhone|iPad|iPod/.test(navigator.userAgent)||
+    (/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
+}
+function mediaSourceConstructor(){
+  if(prefersManagedMediaSource())return window.ManagedMediaSource||window.MediaSource;
+  return window.MediaSource||window.ManagedMediaSource;
+}
 function bestMime(){
   if(typeof MediaRecorder==='undefined'||typeof MediaRecorder.isTypeSupported!=='function')return '';
-  const Source=window.ManagedMediaSource||window.MediaSource;
+  const Source=mediaSourceConstructor();
   if(!Source)return '';
   // iOS Safari records fragmented MP4; WebM-only probing incorrectly
-  // classified Safari as unsupported.
-  const candidates=['video/mp4;codecs="avc1.42E01E,mp4a.40.2"','video/mp4;codecs="avc1.42E01E"','video/mp4','video/webm;codecs=vp8','video/webm;codecs=vp9','video/webm'];
+  // classified Safari as unsupported. Keep WebM first on standard MSE
+  // browsers such as Windows Edge; MP4-first caused Edge-specific stalls.
+  const mp4=['video/mp4;codecs="avc1.42E01E,mp4a.40.2"','video/mp4;codecs="avc1.42E01E"','video/mp4'];
+  const webm=['video/webm;codecs=vp8','video/webm;codecs=vp9','video/webm'];
+  const candidates=prefersManagedMediaSource()?[...mp4,...webm]:[...webm,...mp4];
   for(const m of candidates){
     try{if(MediaRecorder.isTypeSupported(m)&&(!Source.isTypeSupported||Source.isTypeSupported(m)))return m}catch{}
   }
@@ -172,7 +185,7 @@ class MSEPlayer{
     this.video=video;this.mediaSource=null;this.sourceBuffer=null;this.url=null;this.queue=[];this.ready=false;this.mime='';this.started=false;this.offset=0;this.live=false;this.lastSync=0;this.lastProgressAt=0;this.lastCurrentTime=-1;
   }
   async init(mime){
-    this.destroy();this.mime=mime;const Source=window.ManagedMediaSource||window.MediaSource;if(!Source)throw new Error('このブラウザは遅延再生用MediaSourceに対応していません。iOS 17.1以降のSafari、または最新のChrome/Edgeをご利用ください。');this.video.disableRemotePlayback=true;this.mediaSource=new Source();this.url=URL.createObjectURL(this.mediaSource);this.video.srcObject=null;this.video.src=this.url;this.video.muted=true;this.video.playsInline=true;this.video.preload='auto';
+    this.destroy();this.mime=mime;const Source=mediaSourceConstructor();if(!Source)throw new Error('このブラウザは遅延再生用MediaSourceに対応していません。iOS 17.1以降のSafari、または最新のChrome/Edgeをご利用ください。');this.video.disableRemotePlayback=true;this.mediaSource=new Source();this.url=URL.createObjectURL(this.mediaSource);this.video.srcObject=null;this.video.src=this.url;this.video.muted=true;this.video.playsInline=true;this.video.preload='auto';
     await new Promise((resolve,reject)=>{
       const onOpen=()=>{try{this.sourceBuffer=this.mediaSource.addSourceBuffer(mime);this.sourceBuffer.mode='segments';this.sourceBuffer.addEventListener('updateend',()=>{if(!this._trimOldBuffer())this._pump()});this.ready=true;resolve();this._pump();}catch(e){reject(e)}};
       this.mediaSource.addEventListener('sourceopen',onOpen,{once:true});
@@ -428,7 +441,7 @@ async function makeCompareBufferStream(){
 
 async function startDelayBuffer(){
   if(!state.stream||state.recorder)return;
-  if(!(window.ManagedMediaSource||window.MediaSource))throw new Error('このブラウザは連続遅延再生に対応していません。iOS 17.1以降のSafari、または最新のChrome/Edgeをご利用ください。');
+  if(!mediaSourceConstructor())throw new Error('このブラウザは連続遅延再生に対応していません。iOS 17.1以降のSafari、または最新のChrome/Edgeをご利用ください。');
   const mime=bestMime();if(!mime)throw new Error('このブラウザで利用できる録画・遅延再生形式がありません。SafariまたはChrome/Edgeを最新版に更新してください。');state.mime=mime;
   await initMSEPlayers(mime);
   state.recordedSec=0;state.recordingStartMs=performance.now();
