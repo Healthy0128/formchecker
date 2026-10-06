@@ -296,7 +296,11 @@ function detectRotationForVideo(video){
   if(!box?.width||!box?.height)return 0;
   const framePortrait=box.height>box.width;
   const imagePortrait=video.videoHeight>video.videoWidth;
-  return framePortrait!==imagePortrait?90:0;
+  if(framePortrait===imagePortrait)return 0;
+  // iPhone Safari supplies landscape camera frames whose upright portrait
+  // presentation needs a counter-clockwise quarter turn (CSS 270deg).
+  // For the inverse mismatch, rotate clockwise to reach landscape framing.
+  return framePortrait?270:90;
 }
 function transformScaleForQuarterTurn(video){
   const rot=Math.abs(state.rotationDeg)%180;
