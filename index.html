@@ -170,7 +170,7 @@ function bestMime(){
   if(!Source)return '';
   // iOS Safari records fragmented MP4; WebM-only probing incorrectly
   // classified Safari as unsupported. Keep WebM first on standard MSE
-  // browsers such as Windows Edge; MP4-first caused Edge-specific stalls.
+  // browsers such as Windows Edge; MP4-first may select a less reliable path.
   const mp4=['video/mp4;codecs="avc1.42E01E,mp4a.40.2"','video/mp4;codecs="avc1.42E01E"','video/mp4'];
   const webm=['video/webm;codecs=vp8','video/webm;codecs=vp9','video/webm'];
   const candidates=prefersManagedMediaSource()?[...mp4,...webm]:[...webm,...mp4];
