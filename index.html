@@ -36,6 +36,8 @@
 .modes{display:grid;grid-template-columns:1fr;gap:7px}.modes button,.menuPanel button{border:1px solid var(--line);background:rgba(255,255,255,.06);color:#fff;border-radius:11px;padding:10px 12px;text-align:left}.modes button.active{background:#fff;color:#111}
 .menuBody{overflow:auto;padding-right:2px;scrollbar-width:thin}.menuPanel{padding:12px 0;border-top:1px solid rgba(255,255,255,.12)}.menuPanel h3{font-size:13px;margin:0 0 8px;color:#f1f1f2}.row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0;font-size:13px}.row select,.row input[type=number]{max-width:145px;background:#222;color:#fff;border:1px solid var(--line);border-radius:8px;padding:7px}.note{font-size:11px;color:#b9bbc1;line-height:1.45;margin:8px 0}.meter{height:6px;background:#2e3034;border-radius:999px;overflow:hidden}.meter>span{display:block;height:100%;background:#eee;width:0}.compareInputs{display:grid;grid-template-columns:1fr 1fr;gap:7px}.compareInputs label{font-size:12px;display:grid;grid-template-columns:1fr 64px;align-items:center;gap:6px}.compareInputs input{width:64px;background:#222;color:#fff;border:1px solid var(--line);border-radius:8px;padding:6px}.preview-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}.preview-strip img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:7px;background:#222}.rec{color:#ff5d5d;font-weight:700}
 #chunkCountdown{position:absolute;left:50%;top:max(18px,env(safe-area-inset-top));transform:translateX(-50%);z-index:40;max-width:min(92%,560px);padding:12px 18px;border-radius:16px;background:rgba(0,0,0,.70);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(12px);font-size:clamp(16px,2.3vw,24px);font-weight:700;text-align:center;pointer-events:none}
+#orientationPrompt{position:absolute;inset:0;z-index:45;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.72);backdrop-filter:blur(8px);text-align:center}
+#orientationPrompt.hidden{display:none!important}.orientationCard{width:min(440px,100%);padding:22px;border:1px solid var(--line);border-radius:18px;background:rgba(20,20,23,.94);display:flex;flex-direction:column;align-items:center;gap:12px}.orientationCard strong{font-size:clamp(18px,3vw,24px)}.orientationCard p{margin:0;color:#d5d5d8;line-height:1.5}.orientationCard button{min-height:48px;padding:10px 22px;border:0;border-radius:999px;background:#fff;color:#111;font-weight:700}
 
 @media(max-width:700px){#playPauseBtn{min-width:104px;padding:10px 14px}#bottomDock{width:calc(100% - 16px);bottom:max(8px,env(safe-area-inset-bottom));border-radius:14px}#bottomDock button{padding:8px 9px}#overlayControls button{padding:11px 14px}}
 @media(orientation:portrait){#compareStage{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}}
@@ -71,6 +73,10 @@
   </div>
 
   <div id="chunkCountdown" class="hidden" aria-live="assertive"></div>
+
+  <div id="orientationPrompt" class="hidden" role="alertdialog" aria-modal="true" aria-labelledby="orientationPromptTitle">
+    <div class="orientationCard"><strong id="orientationPromptTitle">画面の向きが変わりました</strong><p>向きを変えて撮影するには、現在の向きで撮影を開始し直してください。</p><button id="orientationRestartBtn">現在の向きで撮影開始</button></div>
+  </div>
 
   <div id="overlayControls" aria-label="主操作">
     <button id="startBtn" class="primary">カメラ開始</button>
@@ -116,7 +122,7 @@
         <div class="row"><label for="orientationSel">カメラ向き</label><select id="orientationSel"><option value="auto" selected>自動</option><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></div>
         <div class="row"><label>左右反転</label><input id="mirror" type="checkbox"></div>
         <div class="meter"><span id="meter"></span></div>
-        <p class="note">カメラは時間制限なく連続使用できます。遅延・比較では直近10分だけをローリング保持し、それより古い映像は自動で破棄します。</p><p class="note">撮影映像は16:9（960×540目安）で固定し、端末を回しても撮影範囲を変えません。向きの「自動」は表示だけを回転します。合わない場合は0° / 90° / 180° / 270°で手動補正できます。表示・遅延・比較・静止画・録画に同じ向きを反映します。</p>
+        <p class="note">カメラは時間制限なく連続使用できます。遅延・比較では直近10分だけをローリング保持し、それより古い映像は自動で破棄します。</p><p class="note">撮影開始時の画面向きを固定します。ブラウザで固定できない場合、撮影中の回転を検知して停止し、現在の向きで撮影開始を押し直す案内を表示します。映像は16:9（960×540目安）を維持します。</p>
       </section>
       <section class="menuPanel">
         <h3>比較画面</h3>
@@ -144,7 +150,7 @@ const playback=$('#playback');
 const cmp=[0,1,2,3].map(i=>$('#cmp'+i));
 const cellWait=$$('.cellWait');
 
-const state={mode:'live',stream:null,recorder:null,recordingStartMs:0,recordChunkTimer:null,countdownTimer:null,recordRecorder:null,recordChunks:[],recordCanvas:null,recordStream:null,recordSourceVideo:null,recordRAF:0,recordChunkNo:0,chunkRolling:false,manualRecordStop:false,paused:false,mime:'',recordedSec:0,deviceId:'',cameraChoice:'environment',mirrorCameraKey:'',mirrorTouched:false,rotationDeg:0,orientationMode:'auto',orientationTimer:0,compareCanvas:null,compareCtx:null,compareStream:null,compareRAF:0,compareLastDraw:0};
+const state={mode:'live',stream:null,recorder:null,recordingStartMs:0,recordChunkTimer:null,countdownTimer:null,recordRecorder:null,recordChunks:[],recordCanvas:null,recordStream:null,recordSourceVideo:null,recordRAF:0,recordChunkNo:0,chunkRolling:false,manualRecordStop:false,paused:false,mime:'',recordedSec:0,deviceId:'',cameraChoice:'environment',mirrorCameraKey:'',mirrorTouched:false,rotationDeg:0,orientationMode:'auto',orientationTimer:0,captureOrientation:'',screenOrientationLocked:false,orientationChangeRequired:false,compareCanvas:null,compareCtx:null,compareStream:null,compareRAF:0,compareLastDraw:0};
 const RECORD_CHUNK_MS=30*60*1000;
 const RECORD_COUNTDOWN_SEC=10;
 const DELAY_BUFFER_MAX_SEC=600;
@@ -495,9 +501,49 @@ function cameraConstraints(){
   return {video,audio:false};
 }
 
+function screenOrientationSignature(){
+  const type=screen.orientation?.type||'';
+  if(/^(portrait|landscape)-(primary|secondary)$/.test(type))return type;
+  const angle=Number.isFinite(screen.orientation?.angle)?screen.orientation.angle:(Number.isFinite(window.orientation)?window.orientation:null);
+  if(angle!==null){const n=((angle%360)+360)%360;return `${n===0||n===180?'portrait':'landscape'}-${n}`}
+  return window.innerWidth>=window.innerHeight?'landscape':'portrait';
+}
+function orientationLockTarget(signature){
+  if(/^(portrait|landscape)-(primary|secondary)$/.test(signature))return signature;
+  return signature.startsWith('portrait')?'portrait':'landscape';
+}
+function requestScreenOrientationLock(signature){
+  try{
+    if(typeof screen.orientation?.lock!=='function')return Promise.resolve(false);
+    return screen.orientation.lock(orientationLockTarget(signature)).then(()=>true,()=>false);
+  }catch{return Promise.resolve(false)}
+}
+function releaseScreenOrientationLock(){
+  if(!state.screenOrientationLocked)return;
+  try{screen.orientation?.unlock?.()}catch{}
+  state.screenOrientationLocked=false;
+}
+function showOrientationRestartPrompt(){
+  $('#orientationPrompt').classList.remove('hidden');
+  $('#startBtn').textContent='撮影開始';
+  $('#status').textContent='向き変更：再撮影待ち';
+}
+
 async function startCamera(){
   stopCamera();state.recordedSec=0;
-  const stream=await navigator.mediaDevices.getUserMedia(cameraConstraints());
+  const startOrientation=screenOrientationSignature();
+  state.captureOrientation=startOrientation;state.orientationChangeRequired=false;
+  $('#orientationPrompt').classList.add('hidden');$('#startBtn').textContent='カメラ開始';
+  // Lock when the browser permits it. Devices that require fullscreen or do
+  // not implement the API are handled by the orientation-change restart flow.
+  const lockPromise=requestScreenOrientationLock(startOrientation);
+  let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia(cameraConstraints())}
+  catch(err){state.screenOrientationLocked=await lockPromise;releaseScreenOrientationLock();state.captureOrientation='';throw err}
+  state.screenOrientationLocked=await lockPromise;
+  if(screenOrientationSignature()!==startOrientation){
+    stream.getTracks().forEach(t=>t.stop());releaseScreenOrientationLock();state.captureOrientation='';state.orientationChangeRequired=true;showOrientationRestartPrompt();return;
+  }
   state.stream=stream;
   const active=stream.getVideoTracks()[0]?.getSettings?.().deviceId||'';
   if(active)state.deviceId=active;
@@ -508,6 +554,7 @@ async function startCamera(){
   updateWaitingUI();syncModeWhenReady();
 }
 function stopCamera(){
+  releaseScreenOrientationLock();state.captureOrientation='';
   stopCompareBufferSource();
   clearRecordingChunkTimer();if(state.recorder&&state.recorder.state!=='inactive'){try{state.recorder.stop()}catch{}}state.recorder=null;
   if(state.recordRecorder&&state.recordRecorder.state==='recording'){state.manualRecordStop=true;state.chunkRolling=false;try{state.recordRecorder.stop()}catch{}}
@@ -556,8 +603,16 @@ $('#cameraSel').addEventListener('change',async e=>{
       if((next==='user'||next==='environment') && err?.name==='OverconstrainedError'){
         try{
           stopCamera();
+          const startOrientation=screenOrientationSignature();
+          state.captureOrientation=startOrientation;state.orientationChangeRequired=false;
+          $('#orientationPrompt').classList.add('hidden');
+          const lockPromise=requestScreenOrientationLock(startOrientation);
           const video={width:{ideal:960},height:{ideal:540},aspectRatio:{ideal:16/9},frameRate:{ideal:30,max:30},facingMode:{ideal:next}};
-          const stream=await navigator.mediaDevices.getUserMedia({video,audio:false});
+          let stream;
+          try{stream=await navigator.mediaDevices.getUserMedia({video,audio:false})}
+          catch(err){state.screenOrientationLocked=await lockPromise;releaseScreenOrientationLock();state.captureOrientation='';throw err}
+          state.screenOrientationLocked=await lockPromise;
+          if(screenOrientationSignature()!==startOrientation){stream.getTracks().forEach(t=>t.stop());releaseScreenOrientationLock();state.captureOrientation='';state.orientationChangeRequired=true;showOrientationRestartPrompt();return}
           state.stream=stream;
           applyCameraDefaultMirror(state.cameraChoice,stream);
           if(state.mode==='live')showLiveMain();else await startDelayBuffer();
@@ -575,6 +630,7 @@ if(navigator.mediaDevices?.addEventListener){navigator.mediaDevices.addEventList
 refreshCameraList(false);
 
 $('#startBtn').addEventListener('click',()=>startCamera().catch(e=>alert('カメラを開始できません: '+e.message)));
+$('#orientationRestartBtn').addEventListener('click',()=>startCamera().catch(e=>alert('カメラを開始できません: '+e.message)));
 $('#delaySel').addEventListener('change',()=>{singleRunning=false;updateWaitingUI();startSingleIfReady(true)});
 $('#mirror').addEventListener('change',()=>{state.mirrorTouched=true;setMirror()});setMirror();
 $('#orientationSel').addEventListener('change',e=>setOrientationMode(e.target.value));setOrientationMode('auto');
@@ -736,19 +792,16 @@ setInterval(()=>{if(state.stream){
 function handleOrientationChange(){
   clearTimeout(state.orientationTimer);
   state.orientationTimer=setTimeout(()=>{
-    // Orientation changes affect rendering only. Keep the camera track and
-    // its fixed 16:9 capture constraints untouched to preserve its framing.
-    refreshOrientation();
-    // 録画中に縦横が変わった場合は、向きが混在しないよう安全にファイルを区切って継続する。
-    if(state.recordRecorder&&state.recordRecorder.state==='recording'){
-      state.chunkRolling=true;state.manualRecordStop=false;clearRecordingChunkTimer();
-      try{state.recordRecorder.stop()}catch{}
-    }
+    if(!state.stream||!state.captureOrientation)return;
+    if(screenOrientationSignature()===state.captureOrientation)return;
+    state.orientationChangeRequired=true;
+    stopCamera();
+    showOrientationRestartPrompt();
   },180);
 }
 if(screen.orientation?.addEventListener)screen.orientation.addEventListener('change',handleOrientationChange);
 window.addEventListener('orientationchange',handleOrientationChange);
-window.addEventListener('resize',()=>{clearTimeout(state.orientationTimer);state.orientationTimer=setTimeout(()=>refreshOrientation(),120)});
+window.addEventListener('resize',handleOrientationChange);
 [playback,...cmp].forEach(v=>v.addEventListener('loadedmetadata',()=>refreshOrientation(v)));
 
 
