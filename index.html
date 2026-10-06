@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Sports Motion Studio v13</title>
+<title>Sports Motion Studio v25</title>
 <style>
 :root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#fff;background:#000;--glass:rgba(18,18,20,.62);--line:rgba(255,255,255,.18);--safe:clamp(10px,1.6vw,20px)}
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}button,input,select{font:inherit}button{cursor:pointer}
@@ -35,6 +35,7 @@
 #menuDrawer.open{transform:translateX(0)}.drawerHead{display:flex;align-items:center;justify-content:space-between;gap:8px}.drawerHead h2{font-size:16px;margin:0}#closeMenu{border:1px solid var(--line);background:transparent;color:#fff;border-radius:10px;padding:8px 10px}
 .modes{display:grid;grid-template-columns:1fr;gap:7px}.modes button,.menuPanel button{border:1px solid var(--line);background:rgba(255,255,255,.06);color:#fff;border-radius:11px;padding:10px 12px;text-align:left}.modes button.active{background:#fff;color:#111}
 .menuBody{overflow:auto;padding-right:2px;scrollbar-width:thin}.menuPanel{padding:12px 0;border-top:1px solid rgba(255,255,255,.12)}.menuPanel h3{font-size:13px;margin:0 0 8px;color:#f1f1f2}.row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0;font-size:13px}.row select,.row input[type=number]{max-width:145px;background:#222;color:#fff;border:1px solid var(--line);border-radius:8px;padding:7px}.note{font-size:11px;color:#b9bbc1;line-height:1.45;margin:8px 0}.meter{height:6px;background:#2e3034;border-radius:999px;overflow:hidden}.meter>span{display:block;height:100%;background:#eee;width:0}.compareInputs{display:grid;grid-template-columns:1fr 1fr;gap:7px}.compareInputs label{font-size:12px;display:grid;grid-template-columns:1fr 64px;align-items:center;gap:6px}.compareInputs input{width:64px;background:#222;color:#fff;border:1px solid var(--line);border-radius:8px;padding:6px}.preview-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}.preview-strip img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:7px;background:#222}.rec{color:#ff5d5d;font-weight:700}
+#chunkCountdown{position:absolute;left:50%;top:max(18px,env(safe-area-inset-top));transform:translateX(-50%);z-index:40;max-width:min(92%,560px);padding:12px 18px;border-radius:16px;background:rgba(0,0,0,.70);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(12px);font-size:clamp(16px,2.3vw,24px);font-weight:700;text-align:center;pointer-events:none}
 
 @media(max-width:700px){#playPauseBtn{min-width:104px;padding:10px 14px}#bottomDock{width:calc(100% - 16px);bottom:max(8px,env(safe-area-inset-bottom));border-radius:14px}#bottomDock button{padding:8px 9px}#compareStage{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}#overlayControls button{padding:11px 14px}}
 @media(max-width:430px){#bottomDock{justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap}.dockGroup{flex-wrap:nowrap}#menuToggle{top:18%}}
@@ -53,6 +54,8 @@
     <div class="cell"><video id="cmp2" class="cmpvid front" muted playsinline></video><span id="lab2" class="cellLabel">20秒前</span><div class="wait cellWait"></div></div>
     <div class="cell"><video id="cmp3" class="cmpvid front" muted playsinline></video><span id="lab3" class="cellLabel">30秒前</span><div class="wait cellWait"></div></div>
   </div>
+
+  <div id="chunkCountdown" class="hidden" aria-live="assertive"></div>
 
   <div id="overlayControls" aria-label="主操作">
     <button id="startBtn" class="primary">カメラ開始</button>
@@ -77,7 +80,7 @@
 
   <button id="menuToggle" aria-expanded="false" aria-controls="menuDrawer">MENU</button>
   <aside id="menuDrawer" aria-label="設定メニュー">
-    <div class="drawerHead"><h2>Sports Motion Studio v14</h2><button id="closeMenu">閉じる</button></div>
+    <div class="drawerHead"><h2>Sports Motion Studio v25</h2><button id="closeMenu">閉じる</button></div>
     <div class="menuBody">
       <div class="modes">
         <button data-mode="live" class="active">リアルチェック</button>
@@ -86,26 +89,27 @@
       </div>
       <section class="menuPanel">
         <h3>基本設定</h3>
-        <div class="row"><label>遅延時間</label><select id="delaySel"><option>5</option><option>10</option><option>15</option><option>20</option><option selected>30</option><option>45</option><option>60</option><option>90</option><option>120</option></select></div>
-        <div class="row"><label>セッション自動停止</label><select id="autoStop"><option value="180" selected>3分</option><option value="300">5分</option><option value="600">10分</option><option value="0">停止しない</option></select></div>
-        <div class="row"><label>バッファ上限</label><select id="bufferSec"><option value="60">60秒</option><option value="120" selected>120秒</option><option value="180">180秒</option></select></div>
-        <div class="row"><label>左右反転</label><input id="mirror" type="checkbox" checked></div>
+        <div class="row"><label for="cameraSel">カメラ</label><select id="cameraSel"><option value="environment">アウトカメラ</option><option value="user">インカメラ</option><option value="auto">自動選択</option></select></div>
+        <div class="row"><label>遅延時間</label><select id="delaySel"><option>5</option><option>10</option><option>15</option><option>20</option><option selected>30</option><option>45</option><option>60</option><option>90</option><option>120</option><option>180</option><option>240</option><option>300</option><option>360</option><option>420</option><option>480</option><option>540</option><option>600</option></select></div>
+        <div class="row"><label>バッファ上限</label><span>10分（600秒・ローリング）</span></div>
+        <div class="row"><label for="orientationSel">カメラ向き</label><select id="orientationSel"><option value="auto" selected>自動</option><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></div>
+        <div class="row"><label>左右反転</label><input id="mirror" type="checkbox"></div>
         <div class="meter"><span id="meter"></span></div>
-        <p class="note">カメラは端末に応じた解像度で取得し、表示は画面サイズに合わせて自動調整します。負荷を抑えるため目安は960×540・30fpsです。</p>
+        <p class="note">カメラは時間制限なく連続使用できます。遅延・比較では直近10分だけをローリング保持し、それより古い映像は自動で破棄します。</p><p class="note">カメラ向きは「自動」で2in1・タブレットの画面回転に追従します。合わない場合は0° / 90° / 180° / 270°で手動補正できます。表示・静止画・録画に同じ向きを反映します。</p>
       </section>
       <section class="menuPanel">
         <h3>比較画面</h3>
         <div class="compareInputs">
-          <label>画面1<input id="off0" type="number" min="0" max="120" step="1" value="0"></label>
-          <label>画面2<input id="off1" type="number" min="0" max="120" step="1" value="10"></label>
-          <label>画面3<input id="off2" type="number" min="0" max="120" step="1" value="20"></label>
-          <label>画面4<input id="off3" type="number" min="0" max="120" step="1" value="30"></label>
+          <label>画面1<input id="off0" type="number" min="0" max="600" step="1" value="0"></label>
+          <label>画面2<input id="off1" type="number" min="0" max="600" step="1" value="10"></label>
+          <label>画面3<input id="off2" type="number" min="0" max="600" step="1" value="20"></label>
+          <label>画面4<input id="off3" type="number" min="0" max="600" step="1" value="30"></label>
         </div>
-        <p class="note">0〜120秒。最大値まで映像が貯まった時点で比較を開始します。</p>
+        <p class="note">0〜600秒。最大値まで映像が貯まった時点で比較を開始します。保持するのは常に直近10分だけです。</p>
       </section>
       <section id="recordPanel" class="menuPanel">
         <h3>録画</h3><div class="row"><label>状態</label><span id="recState">停止中</span></div>
-        <p class="note">録画はリアルチェック専用です。左右反転など、画面に表示されている向きを反映して保存します。</p>
+        <p class="note">録画はリアルチェック・遅延・比較のすべてで利用できます。録画するのはカメラの通常映像1画面で、比較画面4枚を合成して録画することはありません。左右反転・向き補正を反映し、30分ごとに自動保存して録画を継続します。区切りの10秒前からカウントダウンします。</p>
       </section>
       <section class="menuPanel"><h3>静止画プレビュー</h3><div id="strip" class="preview-strip"></div></section>
     </div>
@@ -119,7 +123,12 @@ const playback=$('#playback');
 const cmp=[0,1,2,3].map(i=>$('#cmp'+i));
 const cellWait=$$('.cellWait');
 
-const state={mode:'live',stream:null,recorder:null,recordingStartMs:0,sessionTimer:null,recordRecorder:null,recordChunks:[],recordCanvas:null,recordStream:null,recordRAF:0,paused:false,mime:'',recordedSec:0};
+const state={mode:'live',stream:null,recorder:null,recordingStartMs:0,recordChunkTimer:null,countdownTimer:null,recordRecorder:null,recordChunks:[],recordCanvas:null,recordStream:null,recordSourceVideo:null,recordRAF:0,recordChunkNo:0,chunkRolling:false,manualRecordStop:false,paused:false,mime:'',recordedSec:0,deviceId:'',cameraChoice:'environment',mirrorCameraKey:'',rotationDeg:0,orientationMode:'auto',orientationTimer:0};
+const RECORD_CHUNK_MS=30*60*1000;
+const RECORD_COUNTDOWN_SEC=10;
+const DELAY_BUFFER_MAX_SEC=600;
+const DELAY_BUFFER_BITRATE=700000; // 遅延表示専用。長時間安定性を優先した軽量設定
+const DELAY_CHUNK_MS=1000;
 
 function bestMime(){
   for(const m of ['video/webm;codecs=vp8','video/webm;codecs=vp9','video/webm']){
@@ -135,7 +144,7 @@ class MSEPlayer{
   async init(mime){
     this.destroy();this.mime=mime;this.mediaSource=new MediaSource();this.url=URL.createObjectURL(this.mediaSource);this.video.srcObject=null;this.video.src=this.url;this.video.muted=true;this.video.playsInline=true;this.video.preload='auto';
     await new Promise((resolve,reject)=>{
-      const onOpen=()=>{try{this.sourceBuffer=this.mediaSource.addSourceBuffer(mime);this.sourceBuffer.mode='segments';this.sourceBuffer.addEventListener('updateend',()=>this._pump());this.ready=true;resolve();this._pump();}catch(e){reject(e)}};
+      const onOpen=()=>{try{this.sourceBuffer=this.mediaSource.addSourceBuffer(mime);this.sourceBuffer.mode='segments';this.sourceBuffer.addEventListener('updateend',()=>{if(!this._trimOldBuffer())this._pump()});this.ready=true;resolve();this._pump();}catch(e){reject(e)}};
       this.mediaSource.addEventListener('sourceopen',onOpen,{once:true});
       setTimeout(()=>{if(!this.ready) reject(new Error('MediaSourceの初期化に失敗しました'))},5000);
     });
@@ -144,9 +153,20 @@ class MSEPlayer{
     this.ready=false;this.started=false;this.live=false;this.queue=[];if(this.video){try{this.video.pause()}catch{};this.video.srcObject=null;this.video.removeAttribute('src');try{this.video.load()}catch{}}
     if(this.url){try{URL.revokeObjectURL(this.url)}catch{}this.url=null}this.sourceBuffer=null;this.mediaSource=null;
   }
-  push(buf){if(!this.ready)return;this.queue.push(buf.slice(0));this._pump();}
+  push(buf){if(!this.ready)return;this.queue.push(buf);this._pump();}
+  _trimOldBuffer(){
+    if(!this.ready||!this.sourceBuffer||this.sourceBuffer.updating)return false;
+    const b=this.sourceBuffer.buffered;if(!b.length)return false;
+    const start=b.start(0),end=b.end(b.length-1);
+    if(end-start<=DELAY_BUFFER_MAX_SEC+2)return false;
+    const cut=end-DELAY_BUFFER_MAX_SEC;
+    if(cut<=start+0.25)return false;
+    try{this.sourceBuffer.remove(start,cut);return true}catch{return false}
+  }
   _pump(){
-    if(!this.ready||!this.sourceBuffer||this.sourceBuffer.updating||!this.queue.length)return;
+    if(!this.ready||!this.sourceBuffer||this.sourceBuffer.updating)return;
+    if(this._trimOldBuffer())return;
+    if(!this.queue.length)return;
     const b=this.queue.shift();
     try{this.sourceBuffer.appendBuffer(b)}catch(e){this.queue.unshift(b);setTimeout(()=>this._pump(),80);return}
   }
@@ -178,14 +198,91 @@ class MSEPlayer{
 const mainMSE=new MSEPlayer(playback);
 const compareMSE=cmp.map(v=>new MSEPlayer(v));
 const allMSE=[mainMSE,...compareMSE];
+function activeMSEPlayers(){
+  if(state.mode==='delay')return [mainMSE];
+  if(state.mode==='compare')return compareMSE;
+  return [];
+}
 let singleRunning=false,compareRunning=false;
 
-function clampOffset(el){let v=Number(el.value);if(!Number.isFinite(v))v=0;v=Math.round(Math.min(120,Math.max(0,v)));el.value=String(v);return v}
+function clampOffset(el){let v=Number(el.value);if(!Number.isFinite(v))v=0;v=Math.round(Math.min(DELAY_BUFFER_MAX_SEC,Math.max(0,v)));el.value=String(v);return v}
 function compareOffsets(){return [0,1,2,3].map(i=>clampOffset($('#off'+i)))}
 function requiredForMode(){if(state.mode==='live')return 0;if(state.mode==='compare')return Math.max(...compareOffsets());return Number($('#delaySel').value)}
-function setMirror(){const t=$('#mirror').checked?'scaleX(-1)':'none';playback.style.transform=t;cmp.forEach(v=>v.style.transform=t)}
-function availableSec(){return state.recordedSec}
-function updateBufferUI(){const a=availableSec();$('#bufferLabel').textContent=a.toFixed(0)+'秒';const max=Number($('#bufferSec').value);$('#meter').style.width=Math.min(100,a/max*100)+'%';updateWaitingUI()}
+function screenAngle(){
+  const raw=(screen.orientation&&Number.isFinite(screen.orientation.angle))?screen.orientation.angle:(Number.isFinite(window.orientation)?window.orientation:0);
+  return ((raw%360)+360)%360;
+}
+function screenIsPortrait(){
+  // screen.orientation を優先し、取得できない環境だけ画面寸法で判定する。
+  const type=screen.orientation?.type||'';
+  if(type.startsWith('portrait'))return true;
+  if(type.startsWith('landscape'))return false;
+  const a=screenAngle();
+  if(a===0||a===180)return true;
+  if(a===90||a===270)return false;
+  return window.innerHeight>=window.innerWidth;
+}
+function detectRotationForVideo(video){
+  const mode=state.orientationMode||'auto';
+  if(mode!=='auto'){
+    const n=Number(mode);
+    return Number.isFinite(n)?((n%360)+360)%360:0;
+  }
+  // 2in1 / タブレットでは画面の回転角をカメラ補正に使う。
+  // 横向きに戻れば angle=0 に戻るため、90°補正が残り続けない。
+  return screenAngle();
+}
+function transformScaleForQuarterTurn(video){
+  const rot=Math.abs(state.rotationDeg)%180;
+  if(rot!==90||!video?.videoWidth||!video?.videoHeight)return 1;
+  const box=video.parentElement?.getBoundingClientRect?.();
+  if(!box||!box.width||!box.height)return 1;
+  // 90°回転後も映像全体が表示領域内に収まるように縮尺を計算する。
+  const vw=video.videoWidth,vh=video.videoHeight;
+  const normal=Math.min(box.width/vw,box.height/vh);
+  const rotated=Math.min(box.width/vh,box.height/vw);
+  return normal>0?rotated/normal:1;
+}
+function applyVideoTransform(video){
+  if(!video)return;
+  const rot=state.rotationDeg||0;
+  const mirror=$('#mirror').checked;
+  const fit=transformScaleForQuarterTurn(video);
+  video.style.transformOrigin='50% 50%';
+  video.style.transform=`${mirror?'scaleX(-1) ':''}rotate(${rot}deg) scale(${fit})`;
+}
+function applyAllVideoTransforms(){applyVideoTransform(playback);cmp.forEach(applyVideoTransform)}
+function refreshOrientation(source=playback){
+  const candidate=source&&source.videoWidth?source:(cmp.find(v=>v.videoWidth)||playback);
+  state.rotationDeg=detectRotationForVideo(candidate);
+  applyAllVideoTransforms();
+}
+function setOrientationMode(value){
+  const v=(value==='auto'||['0','90','180','270'].includes(String(value)))?String(value):'auto';
+  state.orientationMode=v;
+  const sel=$('#orientationSel');if(sel)sel.value=v;
+  refreshOrientation();
+}
+
+function setMirror(){applyAllVideoTransforms()}
+function defaultMirrorForCamera(choice,stream=null){
+  if(choice==='user')return true;
+  if(choice==='environment')return false;
+  const track=stream?.getVideoTracks?.()[0];
+  const facing=track?.getSettings?.().facingMode||'';
+  return facing==='user';
+}
+function applyCameraDefaultMirror(choice,stream=null,force=false){
+  const track=stream?.getVideoTracks?.()[0];
+  const settings=track?.getSettings?.()||{};
+  const key=`${choice}|${settings.deviceId||''}|${settings.facingMode||''}`;
+  if(!force&&state.mirrorCameraKey===key)return;
+  $('#mirror').checked=defaultMirrorForCamera(choice,stream);
+  state.mirrorCameraKey=key;
+  setMirror();
+}
+function availableSec(){return Math.min(DELAY_BUFFER_MAX_SEC,state.recordedSec)}
+function updateBufferUI(){const a=availableSec();$('#bufferLabel').textContent=a.toFixed(0)+'秒';$('#meter').style.width=Math.min(100,a/DELAY_BUFFER_MAX_SEC*100)+'%';updateWaitingUI()}
 function updateWaitingUI(){
   const need=requiredForMode(),have=availableSec();
   if(state.mode==='compare'){
@@ -197,7 +294,7 @@ function updateWaitingUI(){
 }
 function clearCompareLive(){cmp.forEach(v=>{if(v.srcObject){try{v.pause()}catch{};v.srcObject=null}})}
 function stopAllPlayback(){singleRunning=false;compareRunning=false;state.paused=false;$('#playPauseBtn').textContent='Ⅱ 一時停止';try{playback.pause()}catch{};cmp.forEach(v=>{try{v.pause()}catch{}})}
-function showLive(video){video.removeAttribute('src');try{video.load()}catch{};video.srcObject=state.stream;video.muted=true;video.playsInline=true;video.play().catch(()=>{})}
+function showLive(video){video.removeAttribute('src');try{video.load()}catch{};video.srcObject=state.stream;video.muted=true;video.playsInline=true;video.onloadedmetadata=()=>refreshOrientation(video);video.play().catch(()=>{})}
 function restoreMSEVideo(player){const v=player.video;if(v.srcObject){v.srcObject=null;if(player.url)v.src=player.url}}
 
 function startSingleIfReady(force=false){
@@ -218,9 +315,9 @@ function startCompareIfReady(force=false){
   });
   compareRunning=true;cellWait.forEach(w=>w.classList.add('hidden'));
 }
-function showLiveMain(){if(!state.stream)return;if(playback.srcObject!==state.stream){try{playback.pause()}catch{};playback.removeAttribute('src');try{playback.load()}catch{};playback.srcObject=state.stream;playback.muted=true;playback.playsInline=true;playback.play().catch(()=>{})}singleRunning=false;$('#singleWait').classList.add('hidden');$('#status').textContent='リアルチェック'}
+function showLiveMain(){if(!state.stream)return;if(playback.srcObject!==state.stream){try{playback.pause()}catch{};playback.removeAttribute('src');try{playback.load()}catch{};playback.srcObject=state.stream;playback.muted=true;playback.playsInline=true;playback.onloadedmetadata=()=>refreshOrientation(playback);playback.play().catch(()=>{})}else{refreshOrientation(playback)}singleRunning=false;$('#singleWait').classList.add('hidden');$('#status').textContent='リアルチェック'}
 function syncModeWhenReady(){if(state.mode==='live'){showLiveMain();return}if(state.mode==='compare')startCompareIfReady(false);else startSingleIfReady(false)}
-function updateToolbarForMode(){const live=state.mode==='live',delay=state.mode==='delay',compare=state.mode==='compare';['backBtn','fwdBtn','prevFrame','nextFrame','delayResetBtn'].forEach(id=>{$('#'+id).disabled=!delay;$('#'+id).title=delay?'':'遅延モードで使用します'});$('#recordBtn').classList.toggle('hidden',!live);$('#recordPanel').classList.toggle('hidden',!live);$('#delayControls').classList.toggle('hidden',!delay);$('#compareControls').classList.toggle('hidden',!compare);$('#bufferControls').classList.toggle('hidden',live);$('#playPauseBtn').classList.toggle('hidden',compare);$('#overlayControls').classList.toggle('aboveDock',delay||compare);$('#bottomDock').classList.toggle('hidden',live);$('#playPauseBtn').textContent='Ⅱ 一時停止';$('#comparePlayPauseBtn').textContent='Ⅱ 一時停止';state.paused=false}
+function updateToolbarForMode(){const live=state.mode==='live',delay=state.mode==='delay',compare=state.mode==='compare';['backBtn','fwdBtn','prevFrame','nextFrame','delayResetBtn'].forEach(id=>{$('#'+id).disabled=!delay;$('#'+id).title=delay?'':'遅延モードで使用します'});$('#recordBtn').classList.remove('hidden');$('#recordPanel').classList.remove('hidden');$('#delayControls').classList.toggle('hidden',!delay);$('#compareControls').classList.toggle('hidden',!compare);$('#bufferControls').classList.toggle('hidden',live);$('#playPauseBtn').classList.toggle('hidden',compare);$('#overlayControls').classList.toggle('aboveDock',delay||compare);$('#bottomDock').classList.toggle('hidden',live);$('#playPauseBtn').textContent='Ⅱ 一時停止';$('#comparePlayPauseBtn').textContent='Ⅱ 一時停止';state.paused=false}
 function stopDelayBuffer(){
   if(state.recorder&&state.recorder.state!=='inactive'){try{state.recorder.stop()}catch{}}
   state.recorder=null;state.recordedSec=0;allMSE.forEach(p=>p.destroy());updateBufferUI();
@@ -231,9 +328,9 @@ async function startDelayBuffer(){
   const mime=bestMime();if(!mime)throw new Error('このブラウザで利用できるWebM/MediaSource形式が見つかりません。ChromeまたはEdgeを推奨します。');state.mime=mime;
   await initMSEPlayers(mime);
   state.recordedSec=0;state.recordingStartMs=performance.now();
-  const opts={mimeType:mime,videoBitsPerSecond:1200000};const r=new MediaRecorder(state.stream,opts);state.recorder=r;
-  r.ondataavailable=async e=>{if(!e.data||!e.data.size)return;try{const ab=await e.data.arrayBuffer();allMSE.forEach(p=>p.push(ab));state.recordedSec=(performance.now()-state.recordingStartMs)/1000;updateBufferUI();syncModeWhenReady()}catch(err){console.error(err)}};
-  r.start(500);$('#status').textContent='撮影中';updateWaitingUI();
+  const opts={mimeType:mime,videoBitsPerSecond:DELAY_BUFFER_BITRATE};const r=new MediaRecorder(state.stream,opts);state.recorder=r;
+  r.ondataavailable=async e=>{if(!e.data||!e.data.size)return;try{const ab=await e.data.arrayBuffer();activeMSEPlayers().forEach(p=>p.push(ab));state.recordedSec=(performance.now()-state.recordingStartMs)/1000;updateBufferUI();syncModeWhenReady()}catch(err){console.error(err)}};
+  r.start(DELAY_CHUNK_MS);$('#status').textContent='撮影中';updateWaitingUI();
 }
 async function setMode(m){
   if(m===state.mode)return;
@@ -255,28 +352,134 @@ async function setMode(m){
 }
 $$('.modes button').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode).catch(e=>alert(e.message))));
 
-async function initMSEPlayers(mime){for(const p of allMSE)await p.init(mime)}
+async function initMSEPlayers(mime){
+  allMSE.forEach(p=>p.destroy());
+  for(const p of activeMSEPlayers())await p.init(mime);
+}
+
+async function refreshCameraList(preferCurrent=true){
+  const sel=$('#cameraSel');
+  const previous=preferCurrent?(state.cameraChoice||sel.value):(sel.value||state.cameraChoice||'environment');
+  sel.innerHTML='';
+  const basics=[
+    ['environment','アウトカメラ'],
+    ['user','インカメラ'],
+    ['auto','自動選択']
+  ];
+  basics.forEach(([value,label])=>{
+    const o=document.createElement('option');o.value=value;o.textContent=label;sel.appendChild(o);
+  });
+  if(navigator.mediaDevices?.enumerateDevices){
+    try{
+      const devices=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
+      const seen=new Set();
+      devices.forEach((d,i)=>{
+        if(!d.deviceId||seen.has(d.deviceId))return;seen.add(d.deviceId);
+        const o=document.createElement('option');
+        o.value=`device:${d.deviceId}`;o.textContent=d.label||`カメラ ${i+1}`;sel.appendChild(o);
+      });
+    }catch(e){console.warn('カメラ一覧を取得できませんでした',e)}
+  }
+  const values=[...sel.options].map(o=>o.value);
+  const choice=values.includes(previous)?previous:(values.includes(state.cameraChoice)?state.cameraChoice:'environment');
+  sel.value=choice;state.cameraChoice=choice;
+}
+
+function preferredCaptureSize(){
+  // 画面の向きと同じ縦横比を要求する。ブラウザ側の向き補正を優先する。
+  return screenIsPortrait()?{width:540,height:960}:{width:960,height:540};
+}
+function cameraConstraints(){
+  const size=preferredCaptureSize();
+  const video={width:{ideal:size.width},height:{ideal:size.height},frameRate:{ideal:30,max:30}};
+  const choice=state.cameraChoice||'environment';
+  if(choice==='user'||choice==='environment') video.facingMode={exact:choice};
+  else if(choice.startsWith('device:')) video.deviceId={exact:choice.slice(7)};
+  return {video,audio:false};
+}
+
 async function startCamera(){
   stopCamera();state.recordedSec=0;
-  const stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:960},height:{ideal:540},frameRate:{ideal:30,max:30}},audio:false});
+  const stream=await navigator.mediaDevices.getUserMedia(cameraConstraints());
   state.stream=stream;
+  const active=stream.getVideoTracks()[0]?.getSettings?.().deviceId||'';
+  if(active)state.deviceId=active;
+  applyCameraDefaultMirror(state.cameraChoice,stream);
+  await refreshCameraList(true);
+  setTimeout(()=>refreshOrientation(playback),120);
   if(state.mode==='live')showLiveMain();else await startDelayBuffer();
-  startSessionTimer();updateWaitingUI();syncModeWhenReady();
+  updateWaitingUI();syncModeWhenReady();
 }
 function stopCamera(){
-  clearTimeout(state.sessionTimer);if(state.recorder&&state.recorder.state!=='inactive'){try{state.recorder.stop()}catch{}}state.recorder=null;
-  if(state.recordRecorder&&state.recordRecorder.state==='recording'){try{state.recordRecorder.stop()}catch{}}
-  if(state.recordRAF){cancelAnimationFrame(state.recordRAF);state.recordRAF=0}
-  if(state.recordStream){state.recordStream.getTracks().forEach(t=>t.stop());state.recordStream=null}
-  state.recordCanvas=null;
-  if(state.stream){state.stream.getTracks().forEach(t=>t.stop());state.stream=null}stopAllPlayback();allMSE.forEach(p=>p.destroy());state.recordedSec=0;$('#status').textContent='停止中';updateBufferUI();updateWaitingUI();
+  clearRecordingChunkTimer();if(state.recorder&&state.recorder.state!=='inactive'){try{state.recorder.stop()}catch{}}state.recorder=null;
+  if(state.recordRecorder&&state.recordRecorder.state==='recording'){state.manualRecordStop=true;state.chunkRolling=false;try{state.recordRecorder.stop()}catch{}}
+  cleanupDisplayRecording();
+  if(state.stream){state.stream.getTracks().forEach(t=>t.stop());state.stream=null}state.rotationDeg=0;applyAllVideoTransforms();stopAllPlayback();allMSE.forEach(p=>p.destroy());state.recordedSec=0;$('#status').textContent='停止中';updateBufferUI();updateWaitingUI();
 }
-function startSessionTimer(){clearTimeout(state.sessionTimer);const sec=Number($('#autoStop').value);if(sec>0)state.sessionTimer=setTimeout(()=>{stopCamera();alert('自動停止しました。')},sec*1000)}
+function hideChunkCountdown(){const el=$('#chunkCountdown');el.classList.add('hidden');el.textContent=''}
+function clearRecordingChunkTimer(){clearTimeout(state.recordChunkTimer);clearInterval(state.countdownTimer);state.recordChunkTimer=null;state.countdownTimer=null;hideChunkCountdown()}
+function startRecordingChunkTimer(){
+  clearRecordingChunkTimer();
+  if(!state.recordRecorder||state.recordRecorder.state!=='recording')return;
+  const warningMs=RECORD_CHUNK_MS-RECORD_COUNTDOWN_SEC*1000;
+  state.recordChunkTimer=setTimeout(()=>{
+    let left=RECORD_COUNTDOWN_SEC;
+    const el=$('#chunkCountdown');
+    const paint=()=>{el.textContent=`あと${left}秒後に一度止まります。`;el.classList.remove('hidden')};
+    paint();
+    state.countdownTimer=setInterval(()=>{
+      left--;
+      if(left>0){paint();return}
+      clearInterval(state.countdownTimer);state.countdownTimer=null;hideChunkCountdown();
+      if(state.recordRecorder&&state.recordRecorder.state==='recording'){
+        state.chunkRolling=true;state.manualRecordStop=false;
+        try{state.recordRecorder.stop()}catch{}
+      }
+    },1000);
+  },warningMs);
+}
+
+
+
+$('#cameraSel').addEventListener('change',async e=>{
+  const next=e.target.value;
+  const prev=state.cameraChoice||'environment';
+  if(next===prev)return;
+  if(state.stream){
+    const label=e.target.options[e.target.selectedIndex]?.textContent||'選択したカメラ';
+    const ok=confirm(`${label}に切り替えます。\n現在のカメラを一度停止して再起動します。よろしいですか？`);
+    if(!ok){e.target.value=prev;return}
+  }
+  state.cameraChoice=next;
+  if(!state.stream)applyCameraDefaultMirror(next,null,true);
+  if(state.stream){
+    try{await startCamera()}catch(err){
+      // 一部ブラウザは exact facingMode を拒否するので ideal で一度だけ再試行
+      if((next==='user'||next==='environment') && err?.name==='OverconstrainedError'){
+        try{
+          stopCamera();
+          const size=preferredCaptureSize();const video={width:{ideal:size.width},height:{ideal:size.height},frameRate:{ideal:30,max:30},facingMode:{ideal:next}};
+          const stream=await navigator.mediaDevices.getUserMedia({video,audio:false});
+          state.stream=stream;
+          applyCameraDefaultMirror(state.cameraChoice,stream);
+          if(state.mode==='live')showLiveMain();else await startDelayBuffer();
+          setTimeout(()=>refreshOrientation(playback),120);
+          updateWaitingUI();syncModeWhenReady();await refreshCameraList(true);return;
+        }catch{}
+      }
+      alert('カメラを切り替えられませんでした: '+err.message);
+      state.cameraChoice=prev;e.target.value=prev;
+      try{await startCamera()}catch{}
+    }
+  }
+});
+if(navigator.mediaDevices?.addEventListener){navigator.mediaDevices.addEventListener('devicechange',()=>refreshCameraList(true))}
+refreshCameraList(false);
 
 $('#startBtn').addEventListener('click',()=>startCamera().catch(e=>alert('カメラを開始できません: '+e.message)));
 $('#delaySel').addEventListener('change',()=>{singleRunning=false;updateWaitingUI();startSingleIfReady(true)});
-$('#bufferSec').addEventListener('change',updateBufferUI);
 $('#mirror').addEventListener('change',setMirror);setMirror();
+$('#orientationSel').addEventListener('change',e=>setOrientationMode(e.target.value));setOrientationMode('auto');
 [0,1,2,3].forEach(i=>{const el=$('#off'+i);el.addEventListener('change',()=>{clampOffset(el);compareRunning=false;updateWaitingUI();startCompareIfReady(true)})});
 $('#resyncBtn').addEventListener('click',()=>{
   if(!state.stream||state.mode!=='compare')return;
@@ -311,34 +514,99 @@ $('#prevFrame').addEventListener('click',()=>{if(state.mode!=='delay')return;mai
 $('#nextFrame').addEventListener('click',()=>{if(state.mode!=='delay')return;mainMSE.seek(1/30);state.paused=true;$('#playPauseBtn').textContent='▶ 再生';revealTransport()});
 playback.addEventListener('timeupdate',()=>$('#timeLabel').textContent=(playback.currentTime||0).toFixed(2)+'秒');
 
-$('#shotBtn').addEventListener('click',()=>{const src=state.mode==='compare'?cmp[0]:playback;if(!src.videoWidth)return;const c=document.createElement('canvas');c.width=src.videoWidth;c.height=src.videoHeight;const x=c.getContext('2d');if($('#mirror').checked){x.translate(c.width,0);x.scale(-1,1)}x.drawImage(src,0,0);c.toBlob(blob=>{if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='sports-shot-'+Date.now()+'.png';a.click();const img=new Image();img.src=url;$('#strip').prepend(img);while($('#strip').children.length>5)$('#strip').lastChild.remove()},'image/png')});
-
+function orientedCanvasSize(src){
+  const q=Math.abs(state.rotationDeg)%180===90;
+  return q?{width:src.videoHeight,height:src.videoWidth}:{width:src.videoWidth,height:src.videoHeight};
+}
 function drawDisplayedFrame(ctx,canvas,src){
+  const sw=src.videoWidth,sh=src.videoHeight;if(!sw||!sh)return;
   ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);
-  if($('#mirror').checked){ctx.translate(canvas.width,0);ctx.scale(-1,1)}
-  ctx.drawImage(src,0,0,canvas.width,canvas.height);
+  ctx.translate(canvas.width/2,canvas.height/2);
+  if($('#mirror').checked)ctx.scale(-1,1);
+  ctx.rotate((state.rotationDeg||0)*Math.PI/180);
+  ctx.drawImage(src,-sw/2,-sh/2,sw,sh);
   ctx.setTransform(1,0,0,1,0,0);
 }
+$('#shotBtn').addEventListener('click',()=>{const src=state.mode==='compare'?cmp[0]:playback;if(!src.videoWidth)return;refreshOrientation(src);const size=orientedCanvasSize(src);const c=document.createElement('canvas');c.width=size.width;c.height=size.height;const x=c.getContext('2d');drawDisplayedFrame(x,c,src);c.toBlob(blob=>{if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='sports-shot-'+Date.now()+'.png';a.click();const img=new Image();img.src=url;$('#strip').prepend(img);while($('#strip').children.length>5)$('#strip').lastChild.remove()},'image/png')});
 function cleanupDisplayRecording(){
   if(state.recordRAF){cancelAnimationFrame(state.recordRAF);state.recordRAF=0}
   if(state.recordStream){state.recordStream.getTracks().forEach(t=>t.stop());state.recordStream=null}
+  if(state.recordSourceVideo){
+    try{state.recordSourceVideo.pause()}catch{}
+    try{state.recordSourceVideo.srcObject=null}catch{}
+    state.recordSourceVideo=null;
+  }
   state.recordCanvas=null;
 }
-function startDisplayRecording(){
-  if(state.mode!=='live'||!state.stream||!playback.videoWidth)return;
+async function createRecordingSourceVideo(){
+  if(!state.stream)throw new Error('カメラが開始されていません。');
+  const v=document.createElement('video');
+  v.muted=true;v.playsInline=true;v.autoplay=true;v.srcObject=state.stream;
+  await new Promise((resolve,reject)=>{
+    let done=false;
+    const finish=()=>{if(done)return;done=true;clearTimeout(timer);resolve()};
+    const fail=()=>{if(done)return;done=true;clearTimeout(timer);reject(new Error('録画用カメラ映像を準備できませんでした。'))};
+    const timer=setTimeout(()=>{if(v.videoWidth&&v.videoHeight)finish();else fail()},4000);
+    if(v.videoWidth&&v.videoHeight)finish();else v.addEventListener('loadedmetadata',finish,{once:true});
+  });
+  await v.play().catch(()=>{});
+  if(!v.videoWidth||!v.videoHeight)throw new Error('録画用カメラ映像を取得できませんでした。');
+  return v;
+}
+function downloadRecordingChunk(chunks,mime,chunkNo){
+  if(!chunks.length)return;
+  const blob=new Blob(chunks,{type:mime||'video/webm'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  const d=new Date();
+  const stamp=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0'),'-',String(d.getHours()).padStart(2,'0'),String(d.getMinutes()).padStart(2,'0'),String(d.getSeconds()).padStart(2,'0')].join('');
+  a.href=url;a.download=`sports-record-${stamp}-part${String(chunkNo).padStart(2,'0')}.webm`;a.click();setTimeout(()=>URL.revokeObjectURL(url),2500);
+}
+async function startDisplayRecording(isContinuation=false){
+  if(!state.stream)return;
+  clearRecordingChunkTimer();
+  cleanupDisplayRecording();
   state.recordChunks=[];
-  const canvas=document.createElement('canvas');canvas.width=playback.videoWidth;canvas.height=playback.videoHeight;
+  if(!isContinuation)state.recordChunkNo=0;
+  state.recordChunkNo++;
+  state.chunkRolling=false;state.manualRecordStop=false;
+  let src;
+  try{src=await createRecordingSourceVideo()}catch(err){
+    state.recordChunkNo=Math.max(0,state.recordChunkNo-1);
+    $('#recState').textContent='録画開始エラー';
+    alert(err.message);
+    return;
+  }
+  state.recordSourceVideo=src;
+  refreshOrientation(src);
+  const size=orientedCanvasSize(src);
+  const canvas=document.createElement('canvas');canvas.width=size.width;canvas.height=size.height;
   const ctx=canvas.getContext('2d',{alpha:false});state.recordCanvas=canvas;
-  drawDisplayedFrame(ctx,canvas,playback);
+  drawDisplayedFrame(ctx,canvas,src);
   const out=canvas.captureStream(30);state.recordStream=out;
   const opts={videoBitsPerSecond:1800000};const mime=bestMime();if(mime)opts.mimeType=mime;
   const r=new MediaRecorder(out,opts);state.recordRecorder=r;
-  const draw=()=>{if(!state.recordRecorder||state.recordRecorder.state==='inactive')return;drawDisplayedFrame(ctx,canvas,playback);state.recordRAF=requestAnimationFrame(draw)};
+  const thisChunkNo=state.recordChunkNo;
+  const draw=()=>{
+    if(!state.recordRecorder||state.recordRecorder.state==='inactive')return;
+    if(src.videoWidth&&src.videoHeight)drawDisplayedFrame(ctx,canvas,src);
+    state.recordRAF=requestAnimationFrame(draw);
+  };
   r.ondataavailable=e=>{if(e.data&&e.data.size)state.recordChunks.push(e.data)};
-  r.onstop=()=>{cleanupDisplayRecording();const blob=new Blob(state.recordChunks,{type:r.mimeType||'video/webm'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='sports-record-'+Date.now()+'.webm';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('#recordBtn').textContent='録画開始';$('#recState').textContent='停止中';$('#recState').classList.remove('rec')};
-  r.start(500);draw();$('#recordBtn').textContent='録画停止';$('#recState').textContent='● 録画中（表示向きで保存）';$('#recState').classList.add('rec');
+  r.onstop=()=>{
+    const chunks=[...state.recordChunks];const outMime=r.mimeType||'video/webm';
+    const shouldContinue=state.chunkRolling&&!state.manualRecordStop&&!!state.stream;
+    clearRecordingChunkTimer();cleanupDisplayRecording();downloadRecordingChunk(chunks,outMime,thisChunkNo);
+    state.recordRecorder=null;state.recordChunks=[];
+    if(shouldContinue){
+      $('#recordBtn').textContent='録画停止';$('#recState').textContent=`● 録画中（${state.recordChunkNo+1}本目）`;$('#recState').classList.add('rec');
+      setTimeout(()=>startDisplayRecording(true),250);
+    }else{
+      state.chunkRolling=false;$('#recordBtn').textContent='録画開始';$('#recState').textContent='停止中';$('#recState').classList.remove('rec');
+    }
+  };
+  r.start(1000);draw();startRecordingChunkTimer();
+  $('#recordBtn').textContent='録画停止';$('#recState').textContent=`● 録画中（${state.recordChunkNo}本目）`;$('#recState').classList.add('rec');
 }
-$('#recordBtn').addEventListener('click',()=>{if(state.mode!=='live'||!state.stream)return;if(state.recordRecorder&&state.recordRecorder.state==='recording'){state.recordRecorder.stop();return}startDisplayRecording()});
+$('#recordBtn').addEventListener('click',()=>{if(!state.stream)return;if(state.recordRecorder&&state.recordRecorder.state==='recording'){state.manualRecordStop=true;state.chunkRolling=false;clearRecordingChunkTimer();state.recordRecorder.stop();return}startDisplayRecording(false)});
 
 setInterval(()=>{if(state.stream){
   // リアルチェックではカメラ映像をvideoへ直結するだけ。
@@ -351,6 +619,29 @@ setInterval(()=>{if(state.stream){
   if(compareRunning&&!state.paused)compareMSE.forEach((p,i)=>{if(compareOffsets()[i]>0)p.maintain()});
   syncModeWhenReady();
 }},250);
+
+function handleOrientationChange(){
+  clearTimeout(state.orientationTimer);
+  state.orientationTimer=setTimeout(async()=>{
+    // 同じカメラのまま、端末の向きに合う解像度を再要求する。
+    const track=state.stream?.getVideoTracks?.()[0];
+    const size=preferredCaptureSize();
+    if(track?.applyConstraints){try{await track.applyConstraints({width:{ideal:size.width},height:{ideal:size.height},frameRate:{ideal:30,max:30}})}catch{}}
+    refreshOrientation();
+    // applyConstraints 後に intrinsic size が更新される端末があるため、少し遅れて再判定する。
+    setTimeout(()=>refreshOrientation(),180);
+    // 録画中に縦横が変わった場合は、向きが混在しないよう安全にファイルを区切って継続する。
+    if(state.recordRecorder&&state.recordRecorder.state==='recording'){
+      state.chunkRolling=true;state.manualRecordStop=false;clearRecordingChunkTimer();
+      try{state.recordRecorder.stop()}catch{}
+    }
+  },180);
+}
+if(screen.orientation?.addEventListener)screen.orientation.addEventListener('change',handleOrientationChange);
+window.addEventListener('orientationchange',handleOrientationChange);
+window.addEventListener('resize',()=>{clearTimeout(state.orientationTimer);state.orientationTimer=setTimeout(()=>refreshOrientation(),120)});
+[playback,...cmp].forEach(v=>v.addEventListener('loadedmetadata',()=>refreshOrientation(v)));
+
 
 // ===== 画面UI =====
 const drawer=$('#menuDrawer'), menuToggle=$('#menuToggle'), closeMenu=$('#closeMenu');
