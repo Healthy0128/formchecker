@@ -56,6 +56,21 @@
 #orientationPrompt{position:absolute;inset:0;z-index:45;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.72);backdrop-filter:blur(8px);text-align:center}
 #orientationPrompt.hidden{display:none!important}.orientationCard{width:min(440px,100%);padding:22px;border:1px solid var(--line);border-radius:18px;background:rgba(20,20,23,.94);display:flex;flex-direction:column;align-items:center;gap:12px}.orientationCard strong{font-size:clamp(18px,3vw,24px)}.orientationCard p{margin:0;color:#d5d5d8;line-height:1.5}.orientationCard button{min-height:48px;padding:10px 22px;border:0;border-radius:999px;background:#fff;color:#111;font-weight:700}
 
+/* 起動時のアップデート案内 */
+#updateNotice{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:18px;background:rgba(0,0,0,.76);backdrop-filter:blur(8px)}
+#updateNotice.hidden{display:none!important}
+.updateCard{width:min(520px,100%);max-height:min(86vh,720px);overflow:auto;padding:clamp(20px,4vw,30px);border:1px solid rgba(255,255,255,.2);border-radius:22px;background:rgba(20,22,27,.97);box-shadow:0 24px 80px #000b}
+.updateEyebrow{margin:0 0 8px;color:#9fe4ff;font-size:12px;font-weight:800;letter-spacing:.12em}
+.updateCard h2{margin:0 0 10px;font-size:clamp(22px,4vw,30px);line-height:1.25}
+.updateLead{margin:0 0 18px;color:#d2d7dd;line-height:1.6}
+.updateList{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.updateList li{padding:12px 13px;border:1px solid rgba(255,255,255,.1);border-radius:13px;background:rgba(255,255,255,.055);line-height:1.5}
+.updateList strong{display:block;margin-bottom:3px;color:#fff}
+.updateFooter{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:20px;flex-wrap:wrap}
+#updateDontShow{display:flex;align-items:center;gap:9px;color:#d9dde2;font-size:14px;cursor:pointer}
+#updateDontShow input{width:19px;height:19px;accent-color:#8bdcff}
+#updateNoticeClose{min-height:46px;padding:10px 24px;border:0;border-radius:999px;background:#fff;color:#111;font-weight:800}
+
 @media(max-width:700px){#playPauseBtn{min-width:104px;padding:10px 14px}#overlayControls button{padding:11px 14px}#playbackDockPanel{width:min(190px,52vw);max-height:60vh}#capturePreview{width:clamp(112px,28vw,156px)}}
 @media(orientation:portrait){#compareStage{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}}
 @media(max-width:430px){
@@ -87,6 +102,23 @@
     <div class="previewScreen"><video id="capturePreviewVideo" muted playsinline></video><div id="previewPlaceholder">カメラ開始で<br>映像を表示</div></div>
     <div class="previewFoot"><span>バッファ</span><span id="bufferLabel">0秒</span></div>
   </aside>
+
+  <section id="updateNotice" class="hidden" role="dialog" aria-modal="true" aria-labelledby="updateNoticeTitle" aria-describedby="updateNoticeLead">
+    <div class="updateCard">
+      <p class="updateEyebrow">SPORTS MOTION STUDIO · UPDATE</p>
+      <h2 id="updateNoticeTitle">今回のアップデート</h2>
+      <p id="updateNoticeLead" class="updateLead">動きを確認しやすくするため、遅延・比較再生の画面と操作を改善しました。</p>
+      <ul class="updateList">
+        <li><strong>撮影中の映像を小窓で確認</strong>遅延・比較用に映像を蓄積している間も、カメラに何が映っているか右上のプレビューで確認できます。表示・非表示を切り替えられます。</li>
+        <li><strong>再生操作を左側に集約</strong>再生・一時停止、5秒移動、1フレーム移動、設定位置への移動を、折りたためる操作パネルにまとめました。</li>
+        <li><strong>4画面で比較</strong>画面ごとに遅延時間を設定して、動きを並べて確認できます。</li>
+      </ul>
+      <div class="updateFooter">
+        <label id="updateDontShow"><input id="updateDontShowCheck" type="checkbox">次回から表示しない</label>
+        <button id="updateNoticeClose" type="button">使ってみる</button>
+      </div>
+    </div>
+  </section>
 
   <div id="chunkCountdown" class="hidden" aria-live="assertive"></div>
 
@@ -857,6 +889,21 @@ window.addEventListener('resize',handleOrientationChange);
 [playback,...cmp].forEach(v=>v.addEventListener('loadedmetadata',()=>refreshOrientation(v)));
 capturePreviewVideo.addEventListener('loadedmetadata',()=>{updateCapturePreview();refreshOrientation(capturePreviewVideo)});
 
+
+// ===== 起動時アップデート案内 =====
+const UPDATE_NOTICE_KEY='sports-motion-studio-update-v33-dismissed';
+const updateNotice=$('#updateNotice');
+function closeUpdateNotice(){
+  if($('#updateDontShowCheck').checked){
+    try{localStorage.setItem(UPDATE_NOTICE_KEY,'1')}catch{}
+  }
+  updateNotice.classList.add('hidden');
+}
+$('#updateNoticeClose').addEventListener('click',closeUpdateNotice);
+updateNotice.addEventListener('click',e=>{if(e.target===updateNotice)closeUpdateNotice()});
+let hasDismissedUpdate=false;
+try{hasDismissedUpdate=localStorage.getItem(UPDATE_NOTICE_KEY)==='1'}catch{}
+if(!hasDismissedUpdate)updateNotice.classList.remove('hidden');
 
 // ===== 画面UI =====
 const drawer=$('#menuDrawer'), menuToggle=$('#menuToggle'), closeMenu=$('#closeMenu');
